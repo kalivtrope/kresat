@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C28962FD-8ACF-4960-A75F-2FC48A17D55C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kresat", "src\Kresat\Kresat.csproj", "{F4D75C6C-F4A1-4CBD-96F8-05D6E11D5F54}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F4D75C6C-F4A1-4CBD-96F8-05D6E11D5F54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4D75C6C-F4A1-4CBD-96F8-05D6E11D5F54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4D75C6C-F4A1-4CBD-96F8-05D6E11D5F54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4D75C6C-F4A1-4CBD-96F8-05D6E11D5F54}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F4D75C6C-F4A1-4CBD-96F8-05D6E11D5F54} = {C28962FD-8ACF-4960-A75F-2FC48A17D55C}
+	EndGlobalSection
+EndGlobal
