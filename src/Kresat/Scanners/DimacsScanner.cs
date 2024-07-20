@@ -1,15 +1,15 @@
+using static Kresat.Scanners.DimacsTokenType;
 namespace Kresat.Scanners {
-    class DimacsScanner : Scanner
+    class DimacsScanner : Scanner<DimacsToken, DimacsTokenType, int>
     {
         public DimacsScanner(string source) : base(source){}
-
-        internal enum TokenType
+        protected override void AddEOF()
         {
-            HEAD, LITERAL, CLAUSE_END, EOF
+            AddToken(EOF);
         }
 
-        internal record struct Token(TokenType type, int identifier) {}
-        public List<Token> ScanTokens(){
+        protected override void ScanToken()
+        {
             throw new NotImplementedException();
         }
     }

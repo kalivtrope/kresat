@@ -1,7 +1,26 @@
 namespace Kresat.Scanners{
-    abstract class Scanner
+    abstract class Scanner<TToken, TTokenType, TIdentifier>
+    where TToken : IToken<TToken, TTokenType, TIdentifier> 
     {
+        private List<TToken> tokens = [];
         protected ScannerState state;
+
+        protected void AddToken(TTokenType type){
+            tokens.Add(TToken.Create(type));
+        }
+        protected void AddToken(TTokenType type, TIdentifier identifier){
+            tokens.Add(TToken.Create(type, identifier));
+        }
+        protected abstract void AddEOF();
+        protected abstract void ScanToken();
+        public virtual IEnumerable<TToken> ScanTokens(){
+            while(!state.IsAtEnd()){
+                state.BeginNewToken();
+                ScanToken();
+            }
+            AddEOF();
+            return tokens;
+        }
 
         protected bool IsAlphaNumeric(char c)
         {
