@@ -76,61 +76,51 @@ namespace Kresat {
                 Console.Error.WriteLine("Invalid format. Valid values are 'smtlib' or 'dimacs'");
                 return;
             }
-            string? inputData;
-            if(inputPath != null){
-                inputData = ReadFileContents(inputPath.FullName);
+            string? inputData = ReadFile(inputPath);
+            if(!ErrorLogger.HadError){
+
             }
-            else {
+            string outputData = "TODODODO";
+            WriteFile(outputPath, outputData);
+        }
+
+        private static string? ReadFile(FileInfo? inputPath){
+            string? output = null;
+            if(inputPath != null){
+                output = ReadFileContents(inputPath.FullName);
+            }
+            else{
                 try {
                     using var sr = new StreamReader(Console.OpenStandardInput());
-                    inputData = sr.ReadToEnd();
+                    output = sr.ReadToEnd();
                 }
                 catch (Exception ex){
                     ErrorLogger.Report(0, $"{ex.Message}");
                 }
             }
-            string outputData = "TODODODO";
-            if(outputPath != null){
-                
-                try {
-                    File.WriteAllText(outputPath.FullName, outputData);
-                }
-                catch (Exception ex) {
-                    ErrorLogger.Report(0, $"{ex.Message}");
-                }
+            return output;
+        }
+
+        private static void WriteFile(FileInfo? outputPath, string data){
+           if(outputPath != null){
+                WriteFileContents(outputPath.FullName, data);
             }
             else{
-                Console.WriteLine(outputData);
+                Console.WriteLine(data);
             }
         }
 
         private static void TseitinHandler(FileInfo? inputPath, FileInfo? outputPath, bool useEquivalences)
         {
-            string? inputData;
-            if(inputPath != null){
-                inputData = ReadFileContents(inputPath.FullName);
-            }
-            else{
-                try {
-                    using var sr = new StreamReader(Console.OpenStandardInput());
-                    inputData = sr.ReadToEnd();
-                }
-                catch (Exception ex){
-                    ErrorLogger.Report(0, $"{ex.Message}");
+            string? inputData = ReadFile(inputPath);
+            string outputData = "";
+            if(!ErrorLogger.HadError){
+                SmtLibScanner scanner = new(inputData!);
+                foreach(var token in scanner.ScanTokens()){
+                    outputData += $"{token} ";
                 }
             }
-            string outputData = "TODODODODODO";
-            if(outputPath != null){
-                try {
-                    File.WriteAllText(outputPath.FullName, outputData);
-                }
-                catch (Exception ex){
-                    ErrorLogger.Report(0, $"{ex.Message}");
-                }
-            }
-            else{
-                Console.WriteLine(outputData);
-            }
+            WriteFile(outputPath, outputData);
         }
     }
 }
