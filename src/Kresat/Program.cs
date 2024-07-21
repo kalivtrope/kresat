@@ -67,7 +67,8 @@ namespace Kresat {
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
 
-            return await rootCommand.InvokeAsync(args);
+            await rootCommand.InvokeAsync(args);
+            return ErrorLogger.HadError ? 1 : 0;
         }
 
         private static void SolveHandler(string format, FileInfo? inputPath, FileInfo? outputPath)
@@ -119,8 +120,8 @@ namespace Kresat {
                 foreach(var token in scanner.ScanTokens()){
                     outputData += $"{token} ";
                 }
-            }
             WriteFile(outputPath, outputData);
+            }
         }
     }
 }
