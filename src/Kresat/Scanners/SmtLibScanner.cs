@@ -7,12 +7,14 @@ namespace Kresat.Scanners {
         {
             char c = state.Advance();
             switch(c){
-                case ')' : AddToken(LEFT_PAREN); break;
-                case '(' : AddToken(RIGHT_PAREN); break;
-                case ' ': case '\r': case '\t': break;
+                case ')' : AddToken(RIGHT_PAREN); break;
+                case '(' : AddToken(LEFT_PAREN); break;
                 case '\n': state.BeginNewLine(); break;
                 default:
-                    if(IsAlpha(c)){
+                    if(IsSpace(c)){
+
+                    }
+                    else if(IsAlpha(c)){
                         ScanIdentifier();
                     }
                     else {
@@ -23,7 +25,7 @@ namespace Kresat.Scanners {
         }
         private void ScanIdentifier()
         {
-            while(IsAlpha(state.Peek())){
+            while(IsAlphaNumeric(state.Peek())){
                 state.Advance();
             }
             string text = state.ReadLexem();

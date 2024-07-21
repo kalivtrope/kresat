@@ -6,7 +6,7 @@ namespace Kresat.Scanners {
         EOF
     }
     public enum DimacsTokenType {
-        HEAD, LITERAL, CLAUSE_END, EOF
+        NUM_CLAUSES, NUM_VARS, LITERAL, CLAUSE_END, EOF
     }
     public interface IToken<TSelf, TTokenType, TIdentifier>
         where TSelf : IToken<TSelf, TTokenType, TIdentifier> {
@@ -27,6 +27,10 @@ namespace Kresat.Scanners {
             Type = type;
             Identifier = identifier;
         }
+        public override string ToString()
+        {
+            return $"{Type} {Identifier}";
+        }
 
         public static DimacsToken Create(DimacsTokenType arg)
         {
@@ -44,6 +48,10 @@ namespace Kresat.Scanners {
         public string? Identifier {get;private set;}
         public SmtLibToken(SmtLibTokenType type){
             Type = type;
+        }
+        public override string ToString()
+        {
+            return $"{Type} {Identifier}";
         }
         public SmtLibToken(SmtLibTokenType type, string identifier){
             Type = type;

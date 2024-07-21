@@ -21,7 +21,20 @@ namespace Kresat.Scanners{
             AddEOF();
             return tokens;
         }
-
+        protected void IgnoreWhiteSpace(){
+            while(IsSpace(state.Peek()))
+                state.Advance();
+            state.BeginNewToken();
+        }
+        protected void IgnoreUntilNewline()
+        {
+            while(state.Peek() != '\n' && !state.IsAtEnd()){
+                state.Advance();
+            }
+        }
+        protected bool IsSpace(char c){
+            return c == ' ' || c == '\t' || c == '\r';
+        }
         protected bool IsAlphaNumeric(char c)
         {
             return IsAlpha(c) || IsDigit(c);
@@ -54,7 +67,7 @@ namespace Kresat.Scanners{
             Line++;
         }
         public string ReadLexem(){
-            return source[CurrIdx..StartIdx];
+            return source[StartIdx..CurrIdx];
         }
         public char Peek(){
             if(IsAtEnd()){
