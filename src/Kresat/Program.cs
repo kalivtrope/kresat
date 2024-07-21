@@ -1,52 +1,68 @@
-﻿using Kresat.Parsers;
+﻿using Kresat.Loggers;
+using Kresat.Parsers;
 using Kresat.Scanners;
 using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.CommandLine.NamingConventionBinder;
-using System.Data;
 
 namespace Kresat {
     public class Program {
-        public static void ReadFile(string path){
-            StreamReader sr = new StreamReader(path);
-            var output = new DimacsScanner(sr.ReadToEnd()).ScanTokens();
-            foreach(var token in output){
-                Console.Write($"{token} ");
+        public static string? ReadFileContents(string path){
+            try {
+                StreamReader sr = new StreamReader(path);
+                return sr.ReadToEnd();
+            }
+            catch (Exception ex){
+                ErrorLogger.Report(0, $"{ex.Message}");
+            }
+            return null;
+        }
+        public static void WriteFileContents(string path, string contents){
+            try {
+                StreamWriter sw = new StreamWriter(path);
+                sw.Write(contents);
+            }
+            catch (Exception ex){
+                ErrorLogger.Report(0, $"{ex.Message}");
             }
         }
         public static async Task<int> Main(string[] args){
             var rootCommand = new RootCommand("KreSAT solver");
-            var tseitinCommand = new Command("tseitin", "Convert formula to CNF using Tseitin transformation"){
-                new Argument<FileInfo?>("input", "the input file") {
-                    Arity = ArgumentArity.ZeroOrOne
-                },
-                new Argument<FileInfo?>("output", "the output file") {
-                    Arity = ArgumentArity.ZeroOrOne
-                },
-                new Option<bool>(
+            var inputArgument = new Argument<FileInfo?>(
+                    name: "input",
+                    description: "The input file")
+                    {
+                        Arity = ArgumentArity.ZeroOrOne
+            };
+            var outputArgument = new Argument<FileInfo?>(
+                    name: "output",
+                    "The output file"
+                    ) {
+                        Arity = ArgumentArity.ZeroOrOne
+            };
+            var useEquivalencesOption = new Option<bool>(
                     ["--use-equivalences", "-e"],
                     description: "Use equivalences instead of => implications",
                     getDefaultValue: () => false
-                    )
-                    {}
+            );
+            var tseitinCommand = new Command("tseitin", "Convert formula to CNF using Tseitin transformation")
+            {
+                inputArgument,
+                outputArgument,
+                useEquivalencesOption
             };
-            tseitinCommand.Handler = CommandHandler.Create<FileInfo?, FileInfo?, bool>(TseitinHandler);
+            tseitinCommand.SetHandler(TseitinHandler, inputArgument, outputArgument, useEquivalencesOption);
 
-            var solveCommand = new Command("solve", "Solve a given formula"){
-                new Option<string>(
+            var formatOption = new Option<string>(
                     ["--format", "-f"],
                     description: "The format of the input file (smtlib or dimacs)")
                     {
                         IsRequired = true,
-                    },
-                new Argument<FileInfo?>("input", "the input file"){
-                    Arity = ArgumentArity.ZeroOrOne
-                },
-                new Argument<FileInfo?>("output", "the output file"){
-                    Arity = ArgumentArity.ZeroOrOne
-                }
+                    };
+            var solveCommand = new Command("solve", "Solve a given formula"){
+                formatOption,
+                inputArgument,
+                outputArgument
             };
-            solveCommand.Handler = CommandHandler.Create<string, FileInfo?, FileInfo?>(SolveHandler);
+            solveCommand.SetHandler(SolveHandler, formatOption, inputArgument, outputArgument);
 
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
@@ -56,41 +72,61 @@ namespace Kresat {
 
         private static void SolveHandler(string format, FileInfo? inputPath, FileInfo? outputPath)
         {
-            Console.WriteLine($"Input path: {inputPath}");
             if(format != "smtlib" && format != "dimacs"){
                 Console.Error.WriteLine("Invalid format. Valid values are 'smtlib' or 'dimacs'");
                 return;
             }
-            string inputData;
+            string? inputData;
             if(inputPath != null){
-                inputData = File.ReadAllText(inputPath.FullName);
+                inputData = ReadFileContents(inputPath.FullName);
             }
             else {
-                using var sr = new StreamReader(Console.OpenStandardInput());
-                inputData = sr.ReadToEnd();
+                try {
+                    using var sr = new StreamReader(Console.OpenStandardInput());
+                    inputData = sr.ReadToEnd();
+                }
+                catch (Exception ex){
+                    ErrorLogger.Report(0, $"{ex.Message}");
+                }
             }
             string outputData = "TODODODO";
             if(outputPath != null){
-                File.WriteAllText(outputPath.FullName, outputData);
+                
+                try {
+                    File.WriteAllText(outputPath.FullName, outputData);
+                }
+                catch (Exception ex) {
+                    ErrorLogger.Report(0, $"{ex.Message}");
+                }
             }
             else{
                 Console.WriteLine(outputData);
             }
         }
 
-        private static void TseitinHandler(FileInfo? inputPath, FileInfo? outputPath, bool use_equivalences)
+        private static void TseitinHandler(FileInfo? inputPath, FileInfo? outputPath, bool useEquivalences)
         {
-            string inputData;
+            string? inputData;
             if(inputPath != null){
-                inputData = File.ReadAllText(inputPath.FullName);
+                inputData = ReadFileContents(inputPath.FullName);
             }
             else{
-                using var sr = new StreamReader(Console.OpenStandardInput());
-                inputData = sr.ReadToEnd();
+                try {
+                    using var sr = new StreamReader(Console.OpenStandardInput());
+                    inputData = sr.ReadToEnd();
+                }
+                catch (Exception ex){
+                    ErrorLogger.Report(0, $"{ex.Message}");
+                }
             }
             string outputData = "TODODODODODO";
             if(outputPath != null){
-                File.WriteAllText(outputPath.FullName, outputData);
+                try {
+                    File.WriteAllText(outputPath.FullName, outputData);
+                }
+                catch (Exception ex){
+                    ErrorLogger.Report(0, $"{ex.Message}");
+                }
             }
             else{
                 Console.WriteLine(outputData);
