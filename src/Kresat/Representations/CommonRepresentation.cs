@@ -19,7 +19,9 @@ namespace Kresat.Representations {
             expectedVarNum = num;
         }
         public void EndClause(){
-            AddClause(currClause!);
+            if(currClause is not null){
+                AddClause(currClause);
+            }
             currClause = null;
         }
         public void AddLiteral(int lit){

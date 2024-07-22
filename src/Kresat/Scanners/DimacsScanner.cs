@@ -26,7 +26,7 @@ namespace Kresat.Scanners {
                     state.BeginNewLine();
                     break;
                 default:
-                    if (IsSpace(c)){}
+                    if (IsSpace(c) || c == '%'){}
                     else if(IsDigit(c)){
                         ScanLiteral();
                     }
