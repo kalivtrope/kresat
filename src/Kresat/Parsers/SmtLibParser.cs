@@ -106,7 +106,7 @@ namespace Kresat.Parsers {
         private void AddClause(SmtLibTokenType type, int a, int b, int c)
         {
             //res = $"_{fid-origVarNum} ≡ \n" + res;
-            if(type == AND){
+            if(type == OR){
                 // a ≡ b v c
                 // => (-a) v b v c
                 // <= (a v (-b)) ^ (a v (-c))
@@ -116,7 +116,7 @@ namespace Kresat.Parsers {
                     cr.AddClause([a,-c]);
                 }
             }
-            else if(type == OR){
+            else if(type == AND){
                 // a ≡ b ^ c
                 // => (-a v b) ^ (-a v c)
                 // <= a v -b v -c
