@@ -3,8 +3,7 @@ using Kresat.Loggers;
 
 namespace Kresat.Representations {
     class CommonRepresentation {
-        int numClauses;
-        int numVars;
+        HashSet<int> vars = new();
         List<List<int>> clauses = new();
         StringBuilder comments = new();
         List<int>? currClause;
@@ -22,7 +21,6 @@ namespace Kresat.Representations {
             currClause!.Add(lit);
         }
         public void AddClause(IEnumerable<int> clause){
-            numClauses++;
             HashSet<int> literals = new();
             foreach(var literal in clause){
                 if(literal == 0){
@@ -31,6 +29,7 @@ namespace Kresat.Representations {
                 if(literals.Contains(-literal)){
                     ErrorLogger.Report(0, $"Cannot have both {literal} and {-literal} in the same clause");
                 }
+                vars.Add(Math.Abs(literal));
                 literals.Add(literal);
             }
             clauses.Add(clause.ToList());
@@ -39,7 +38,7 @@ namespace Kresat.Representations {
         public override string ToString()
         {
             StringBuilder result = comments;
-            result.AppendLine($"p cnf {numVars} {numClauses}");
+            result.AppendLine($"p cnf {vars.Count} {clauses.Count}");
             foreach(var clause in clauses){
                 foreach(var literal in clause){
                     result.Append($"{literal} ");
