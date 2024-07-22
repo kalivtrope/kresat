@@ -118,9 +118,11 @@ namespace Kresat {
             if(!ErrorLogger.HadError){
                 SmtLibScanner scanner = new(inputData!);
                 foreach(var token in scanner.ScanTokens()){
-                    outputData += $"{token} ";
+                    //outputData += $"{token} ";
                 }
-            WriteFile(outputPath, outputData);
+                SmtLibParser parser = new(scanner.ScanTokens(), useEquivalences);
+                Console.Write(parser.ToCommonRepresentation());
+                //WriteFile(outputPath, outputData);
             }
         }
     }
