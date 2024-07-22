@@ -8,28 +8,28 @@ namespace Kresat.Scanners {
     public enum DimacsTokenType {
         NUM_CLAUSES, NUM_VARS, LITERAL, CLAUSE_END, EOF
     }
-    public interface IToken<TSelf, TTokenType, TIdentifier>
-        where TSelf : IToken<TSelf, TTokenType, TIdentifier> {
+    public interface IToken<TSelf, TTokenType, TPayload>
+        where TSelf : IToken<TSelf, TTokenType, TPayload> {
         static abstract TSelf Create(TTokenType arg);
-        static abstract TSelf Create(TTokenType arg1, TIdentifier arg2);
+        static abstract TSelf Create(TTokenType arg1, TPayload arg2);
         public TTokenType Type {get;}
-        public TIdentifier? Identifier {get;}
+        public TPayload? Payload {get;}
     }
 
     public class DimacsToken : IToken<DimacsToken, DimacsTokenType, int>
     {
         public DimacsTokenType Type {get;private set;}
-        public int Identifier {get;private set;}
+        public int Payload {get;private set;}
         public DimacsToken(DimacsTokenType type){
             Type = type;
         }
         public DimacsToken(DimacsTokenType type, int identifier){
             Type = type;
-            Identifier = identifier;
+            Payload = identifier;
         }
         public override string ToString()
         {
-            return $"{Type} {Identifier}";
+            return $"{Type} {Payload}";
         }
 
         public static DimacsToken Create(DimacsTokenType arg)
@@ -45,17 +45,17 @@ namespace Kresat.Scanners {
     public class SmtLibToken : IToken<SmtLibToken, SmtLibTokenType, string>
     {
         public SmtLibTokenType Type {get;private set;}
-        public string? Identifier {get;private set;}
+        public string? Payload {get;private set;}
         public SmtLibToken(SmtLibTokenType type){
             Type = type;
         }
         public override string ToString()
         {
-            return $"{Type} {Identifier}";
+            return $"{Type} {Payload}";
         }
         public SmtLibToken(SmtLibTokenType type, string identifier){
             Type = type;
-            Identifier = identifier;
+            Payload = identifier;
         }
 
         public static SmtLibToken Create(SmtLibTokenType type)

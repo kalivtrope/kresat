@@ -7,17 +7,25 @@ namespace Kresat.Representations {
         List<List<int>> clauses = new();
         StringBuilder comments = new();
         List<int>? currClause;
+        int? expectedClauseNum;
+        int? expectedVarNum;
         public void AddComment(string comment){
             comments.AppendJoin(separator:" ", "c", comment, "\n");
         }
-        public void BeginClause(){
-            currClause = new();
+        public void SetExpectedClauseNum(int num){
+            expectedClauseNum = num;
+        }
+        public void SetExpectedVarNum(int num){
+            expectedVarNum = num;
         }
         public void EndClause(){
             AddClause(currClause!);
             currClause = null;
         }
         public void AddLiteral(int lit){
+            if(currClause == null){
+                currClause = [];
+            }
             currClause!.Add(lit);
         }
         public void AddClause(IEnumerable<int> clause){
@@ -34,11 +42,22 @@ namespace Kresat.Representations {
             }
             clauses.Add(clause.ToList());
         }
-
+        public void CheckEquals(int expected, int actual, string what){
+            if(expected != actual){
+                ErrorLogger.Report(0, $"Wrong {what}: expected {expected}, got {actual}");
+            }
+        }
         public override string ToString()
         {
             StringBuilder result = comments;
-            result.AppendLine($"p cnf {vars.Count} {clauses.Count}");
+            int maxVar = vars.Max();
+            if(expectedClauseNum is not null){
+                CheckEquals(expectedClauseNum.Value, clauses.Count, "clause number");
+            }
+            if(expectedVarNum is not null){
+                CheckEquals(expectedVarNum.Value, maxVar, "max variable number");
+            }
+            result.AppendLine($"p cnf {maxVar} {clauses.Count}");
             foreach(var clause in clauses){
                 foreach(var literal in clause){
                     result.Append($"{literal} ");

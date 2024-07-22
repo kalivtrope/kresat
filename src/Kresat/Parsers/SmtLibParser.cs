@@ -3,7 +3,7 @@ using Kresat.Representations;
 using Kresat.Scanners;
 using static Kresat.Scanners.SmtLibTokenType;
 namespace Kresat.Parsers {
-    class SmtLibParser {
+    class SmtLibParser : IParser {
         bool debug = false;
         List<SmtLibToken> tokens;
         Dictionary<string, int> idMap = [];
@@ -12,7 +12,7 @@ namespace Kresat.Parsers {
         int ID = 1;
         int origVarNum;
         bool useEquivalences;
-        CommonRepresentation cr = new();
+        public CommonRepresentation cr {get; private set;} = new();
         public SmtLibParser(IEnumerable<SmtLibToken> tokens, bool useEquivalences)
         {
             this.useEquivalences = useEquivalences;
@@ -20,7 +20,7 @@ namespace Kresat.Parsers {
             this.tokens = tokens.ToList();
             foreach(var token in tokens){
                 if(token.Type == IDENTIFIER){
-                    hs.Add(token.Identifier!);
+                    hs.Add(token.Payload!);
                 }
             }
             foreach(var identifier in hs){
@@ -87,7 +87,7 @@ namespace Kresat.Parsers {
                             SmtLibToken operand = Advance();
                             CheckTokenType(operand, IDENTIFIER);
                             Debug(levelOfIndent, op, operand);
-                            int id = idMap[operand.Identifier!];
+                            int id = idMap[operand.Payload!];
                             rpar = Advance();
                             CheckTokenType(rpar, RIGHT_PAREN);
                             return -id;
@@ -95,7 +95,7 @@ namespace Kresat.Parsers {
                     break;
                 case IDENTIFIER:
                     Debug(levelOfIndent, curr);
-                    return idMap[curr.Identifier!];
+                    return idMap[curr.Payload!];
                 default:
                     ErrorLogger.Report(0, $"Unexpected token: {curr} at idx {currIdx} (expected either IDENTIFIER or LEFT_PAREN)");
                     break;
@@ -105,7 +105,6 @@ namespace Kresat.Parsers {
 
         private void AddClause(SmtLibTokenType type, int a, int b, int c)
         {
-            //res = $"_{fid-origVarNum} ≡ \n" + res;
             if(type == OR){
                 // a ≡ b v c
                 // => (-a) v b v c

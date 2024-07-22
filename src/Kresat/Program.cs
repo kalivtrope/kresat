@@ -79,10 +79,17 @@ namespace Kresat {
             }
             string? inputData = ReadFile(inputPath);
             if(!ErrorLogger.HadError){
-
+                IParser parser;
+                if(format == "smtlib"){
+                    parser = new SmtLibParser(new SmtLibScanner(inputData!).ScanTokens(), false);
+                }
+                else {
+                    parser = new DimacsParser(new DimacsScanner(inputData!).ScanTokens());
+                }
+                WriteFile(outputPath, parser.ToCommonRepresentation().ToString());
             }
-            string outputData = "TODODODO";
-            WriteFile(outputPath, outputData);
+            //string outputData = "TODODODO";
+            //WriteFile(outputPath, outputData);
         }
 
         private static string? ReadFile(FileInfo? inputPath){
@@ -107,22 +114,20 @@ namespace Kresat {
                 WriteFileContents(outputPath.FullName, data);
             }
             else{
-                Console.WriteLine(data);
+                Console.Write(data);
             }
         }
 
         private static void TseitinHandler(FileInfo? inputPath, FileInfo? outputPath, bool useEquivalences)
         {
             string? inputData = ReadFile(inputPath);
-            string outputData = "";
             if(!ErrorLogger.HadError){
                 SmtLibScanner scanner = new(inputData!);
-                foreach(var token in scanner.ScanTokens()){
-                    //outputData += $"{token} ";
-                }
+                /*foreach(var token in scanner.ScanTokens()){
+                    outputData += $"{token} ";
+                }*/
                 SmtLibParser parser = new(scanner.ScanTokens(), useEquivalences);
-                Console.Write(parser.ToCommonRepresentation());
-                //WriteFile(outputPath, outputData);
+                WriteFile(outputPath, parser.ToCommonRepresentation().ToString());
             }
         }
     }

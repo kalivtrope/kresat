@@ -1,6 +1,6 @@
 namespace Kresat.Scanners{
-    abstract class Scanner<TToken, TTokenType, TIdentifier>
-    where TToken : IToken<TToken, TTokenType, TIdentifier> 
+    abstract class Scanner<TToken, TTokenType, TPayload>
+    where TToken : IToken<TToken, TTokenType, TPayload> 
     {
         private List<TToken> tokens = [];
         protected ScannerState state;
@@ -8,7 +8,7 @@ namespace Kresat.Scanners{
         protected void AddToken(TTokenType type){
             tokens.Add(TToken.Create(type));
         }
-        protected void AddToken(TTokenType type, TIdentifier identifier){
+        protected void AddToken(TTokenType type, TPayload identifier){
             tokens.Add(TToken.Create(type, identifier));
         }
         protected abstract void AddEOF();
