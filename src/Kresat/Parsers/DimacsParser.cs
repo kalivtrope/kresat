@@ -22,9 +22,8 @@ namespace Kresat.Parsers {
                         cr.AddLiteral(token.Payload);
                         break;
                     case CLAUSE_END:
-                        cr.EndClause();
-                        break;
                     case EOF:
+                        cr.EndClause();
                         break;
                 }
             }
