@@ -4,15 +4,14 @@ using Kresat.Loggers;
 namespace Kresat.Representations {
     class CommonRepresentation {
         public required StringBuilder Comments { get; internal set; }
-        public required List<int> Vars { get; internal set; }
+        public required int LiteralCount {get; internal set;}
         public required List<List<int>> Clauses { get; internal set; }
 
         public override string ToString()
         {
             StringBuilder result = Comments;
-            int maxVar = Vars.Max();
 
-            result.AppendLine($"p cnf {maxVar} {Clauses.Count}");
+            result.AppendLine($"p cnf {LiteralCount} {Clauses.Count}");
             foreach(var clause in Clauses){
                 foreach(var literal in clause){
                     result.Append($"{literal} ");
@@ -80,7 +79,7 @@ namespace Kresat.Representations {
             }
             return new CommonRepresentation {
                 Comments = comments,
-                Vars = vars.ToList(),
+                LiteralCount = vars.Max(),
                 Clauses = clauses
             };
         }

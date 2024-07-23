@@ -1,6 +1,7 @@
 ﻿using Kresat.Loggers;
 using Kresat.Parsers;
 using Kresat.Scanners;
+using Kresat.Solvers;
 using System.CommandLine;
 
 namespace Kresat {
@@ -86,10 +87,8 @@ namespace Kresat {
                 else {
                     parser = new DimacsParser(new DimacsScanner(inputData!).ScanTokens());
                 }
-                WriteFile(outputPath, parser.ToCommonRepresentation().ToString());
+                WriteFile(outputPath, new DPLLSolver(parser.ToCommonRepresentation()).Solve().ToString());
             }
-            //string outputData = "TODODODO";
-            //WriteFile(outputPath, outputData);
         }
 
         private static string? ReadFile(FileInfo? inputPath){
