@@ -3,7 +3,7 @@ using Kresat.Scanners;
 using static Kresat.Scanners.DimacsTokenType;
 namespace Kresat.Parsers {
     class DimacsParser : IParser {
-        public CommonRepresentation cr {get; private set;} = new();
+        public CommonRepresentationBuilder cr {get; private set;} = new();
         IEnumerable<DimacsToken> tokens;
         public DimacsParser(IEnumerable<DimacsToken> tokens){
             this.tokens = tokens;
@@ -27,7 +27,7 @@ namespace Kresat.Parsers {
                         break;
                 }
             }
-            return cr;
+            return cr.Build();
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Kresat.Parsers {
         int ID = 1;
         int origVarNum;
         bool useEquivalences;
-        public CommonRepresentation cr {get; private set;} = new();
+        public CommonRepresentationBuilder cr {get; private set;} = new();
         public SmtLibParser(IEnumerable<SmtLibToken> tokens, bool useEquivalences)
         {
             this.useEquivalences = useEquivalences;
@@ -143,7 +143,7 @@ namespace Kresat.Parsers {
             for(int i = 1; i < intToId.Count; i++){
                 cr.AddComment($"{i} = {intToId[i]}{(IsGate(i) ? " ≡ " + gateExpr[GateId(i)] : null)}{(i == Math.Abs(rootId) ? " (root)" : null)}");
             }
-            return cr;
+            return cr.Build();
         }
     }
 }

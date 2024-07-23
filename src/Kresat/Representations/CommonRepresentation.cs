@@ -3,6 +3,26 @@ using Kresat.Loggers;
 
 namespace Kresat.Representations {
     class CommonRepresentation {
+        public required StringBuilder Comments { get; internal set; }
+        public required List<int> Vars { get; internal set; }
+        public required List<List<int>> Clauses { get; internal set; }
+
+        public override string ToString()
+        {
+            StringBuilder result = Comments;
+            int maxVar = Vars.Max();
+
+            result.AppendLine($"p cnf {maxVar} {Clauses.Count}");
+            foreach(var clause in Clauses){
+                foreach(var literal in clause){
+                    result.Append($"{literal} ");
+                }
+                result.AppendLine("0");
+            }
+            return result.ToString();
+        }
+    }
+    class CommonRepresentationBuilder {
         HashSet<int> vars = new();
         List<List<int>> clauses = new();
         StringBuilder comments = new();
@@ -44,30 +64,25 @@ namespace Kresat.Representations {
             }
             clauses.Add(clause.ToList());
         }
+
+
         public void CheckEquals(int expected, int actual, string what){
             if(expected != actual){
                 ErrorLogger.Report(0, $"Wrong {what}: expected {expected}, got {actual}");
             }
         }
-        public override string ToString()
-        {
-            StringBuilder result = comments;
-            int maxVar = vars.Max();
+        public CommonRepresentation Build(){
             if(expectedClauseNum is not null){
                 CheckEquals(expectedClauseNum.Value, clauses.Count, "clause number");
             }
             if(expectedVarNum is not null){
-                CheckEquals(expectedVarNum.Value, maxVar, "max variable number");
+                CheckEquals(expectedVarNum.Value, vars.Max(), "max variable number");
             }
-            result.AppendLine($"p cnf {maxVar} {clauses.Count}");
-            foreach(var clause in clauses){
-                foreach(var literal in clause){
-                    result.Append($"{literal} ");
-                }
-                result.AppendLine("0");
-            }
-            return result.ToString();
-            
+            return new CommonRepresentation {
+                Comments = comments,
+                Vars = vars.ToList(),
+                Clauses = clauses
+            };
         }
 
     }
