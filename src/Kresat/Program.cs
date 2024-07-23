@@ -87,7 +87,7 @@ namespace Kresat {
                 else {
                     parser = new DimacsParser(new DimacsScanner(inputData!).ScanTokens());
                 }
-                WriteFile(outputPath, new DPLLSolver(parser.ToCommonRepresentation()).Solve().ToString());
+                WriteFile(outputPath, new DPLLSolver(parser.ToCommonRepresentation()).Solve().ToString() + "\n");
             }
         }
 
