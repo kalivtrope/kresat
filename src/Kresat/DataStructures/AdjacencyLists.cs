@@ -41,9 +41,16 @@ namespace Kresat.Representations {
         internal Stack<Decision> decisions = new();
         SortedSet<int> UndecidedVars = new();
     public void Backtrack(int decisionLevel){
+      bool refilled = false;
       while (decisions.Count > 0 && decisions.Peek().DecisionLevel > decisionLevel){
-        UndoLiteral(decisions.Peek().Literal);
-        decisions.Pop();
+        Decision decision = decisions.Pop();
+        bool shouldRefill = decisions.Count <= 0 || decisions.Peek().DecisionLevel <= decisionLevel; 
+        UndoLiteral(decision.Literal,
+                    refillUnits: shouldRefill);
+        refilled |= shouldRefill;
+      }
+      if(!refilled){
+        Console.Error.WriteLine("ERROR: DID NOT REFILL");
       }
       currDecisionLevel = decisionLevel;
     }
@@ -70,7 +77,7 @@ namespace Kresat.Representations {
       AssignLiteral(literal);
     }
 
-    public void UnitResolution(){
+    public void UnitPropagation(){
       while(unitClauses.Count > 0 && numConflictingClauses == 0){
         int currClause = unitClauses.Pop();
         //Console.WriteLine($"clauseData Count: {clauseData.Count} accessing {currClause}");
@@ -107,8 +114,10 @@ namespace Kresat.Representations {
         }
       }
     }
-    private void UndoLiteral(int literal){
-      unitClauses.Clear();
+    private void UndoLiteral(int literal, bool refillUnits){
+      if(refillUnits){
+        unitClauses.Clear();
+      }
       CheckEqual(literalData[LiteralIdx(literal)].Value, Valuation.SATISFIED);
       CheckEqual(literalData[LiteralIdx(-literal)].Value, Valuation.FALSIFIED);
       UndecidedVars.Add(Math.Abs(literal));
@@ -116,7 +125,7 @@ namespace Kresat.Representations {
       literalData[LiteralIdx(-literal)].Value = Valuation.UNSATISFIED;
       foreach (var clause in literalData[LiteralIdx(literal)].adjacentClauses){
         clauseData[clause].UnsatisfyLiteral();
-        if(clauseData[clause].IsUnit()){
+        if(refillUnits && clauseData[clause].IsUnit()){
           unitClauses.Push(clause);
         }
       }
@@ -125,7 +134,7 @@ namespace Kresat.Representations {
           numConflictingClauses--;
         }
         clauseData[clause].UnfalsifyLiteral();
-        if(clauseData[clause].IsUnit()){
+        if(refillUnits && clauseData[clause].IsUnit()){
           unitClauses.Push(clause);
         }
       }
