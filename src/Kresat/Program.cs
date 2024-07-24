@@ -7,6 +7,10 @@ using System.CommandLine;
 
 namespace Kresat {
     public class Program {
+        enum Format {
+            dimacs,
+            smtlib
+        }
         public static string? ReadFileContents(string path){
             try {
                 StreamReader sr = new StreamReader(path);
@@ -40,11 +44,13 @@ namespace Kresat {
                     ) {
                         Arity = ArgumentArity.ZeroOrOne
             };
-            var useEquivalencesOption = new Option<bool>(
+            var useEquivalencesOption = new Option<bool?>(
                     ["--use-equivalences", "-e"],
                     description: "Use equivalences instead of => implications",
                     getDefaultValue: () => false
-            );
+            ){
+                Arity = ArgumentArity.Zero
+            };
             var tseitinCommand = new Command("tseitin", "Convert formula to CNF using Tseitin transformation")
             {
                 inputArgument,
@@ -53,18 +59,64 @@ namespace Kresat {
             };
             tseitinCommand.SetHandler(TseitinHandler, inputArgument, outputArgument, useEquivalencesOption);
 
-            var formatOption = new Option<string>(
+            var formatOption = new Option<Format?>(
                     ["--format", "-f"],
-                    description: "The format of the input file (smtlib or dimacs)")
-                    {
-                        IsRequired = true,
-                    };
+                    description: $"Specify input file format\nAlternatively use -c (for smtlib) or -s (for dimacs)"){};
+
+            formatOption.AddValidator( v => {
+                try {
+                    var x = v.GetValueOrDefault<Format?>();
+                }
+                catch {
+                    v.ErrorMessage = $"Invalid format: got '{v.GetValueOrDefault<string>()}', expected one of '{Format.smtlib}' or '{Format.dimacs}'.";
+                }
+            }
+            );
+
+            var useSmtlibOption = new Option<bool?>(
+                ["-c"],
+                description: $"Use {Format.smtlib}"
+            ){
+                Arity = ArgumentArity.Zero
+            };
+            var useDimacsOption = new Option<bool?>(
+                ["-s"],
+                description: $"Use {Format.dimacs}"
+            ){
+                Arity = ArgumentArity.Zero
+            };
             var solveCommand = new Command("solve", "Solve a given formula"){
                 formatOption,
                 inputArgument,
-                outputArgument
+                outputArgument,
+                useSmtlibOption,
+                useDimacsOption
             };
-            solveCommand.SetHandler(SolveHandler, formatOption, inputArgument, outputArgument);
+            solveCommand.AddValidator( (result) => {
+                var res = result.FindResultFor(inputArgument);
+                // if either --format, -c or -s is present, we needn't infer it from the input file
+                if(result.GetValueForOption(formatOption) is not null
+                   || result.GetValueForOption(useSmtlibOption) is not null
+                   || result.GetValueForOption(useDimacsOption) is not null){
+                    return;
+                }
+                // otherwise, try to infer the format from the file extensions
+                if(res is not null){
+                    var file = res.GetValueOrDefault<FileInfo?>();
+                    if(file is not null){
+                        var path = file.FullName;
+                        if(path.EndsWith(".cnf") || path.EndsWith(".sat")){
+                            return;
+                        }
+                        result.ErrorMessage = "Failed to infer input format. You can specify it using -f, -c or -s.";
+                    }
+                }
+                else {
+                    result.ErrorMessage = "The input format must be specified when reading from stdin.";
+                }
+            } );
+            solveCommand.SetHandler(SolveHandler, formatOption, inputArgument, outputArgument,
+                                    useSmtlibOption, useDimacsOption);
 
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
@@ -73,16 +125,29 @@ namespace Kresat {
             return ErrorLogger.HadError ? 1 : 0;
         }
 
-        private static void SolveHandler(string format, FileInfo? inputPath, FileInfo? outputPath)
+        private static void SolveHandler(Format? format, FileInfo? inputPath, FileInfo? outputPath,
+                                         bool? useSmtlib, bool? useDimacs)
         {
-            if(format != "smtlib" && format != "dimacs"){
-                Console.Error.WriteLine("Invalid format. Valid values are 'smtlib' or 'dimacs'");
-                return;
+            if(format is null){
+                if(useDimacs.HasValue && useDimacs.Value){
+                    format = Format.dimacs;
+                }
+                else if(useSmtlib.HasValue && useSmtlib.Value){
+                    format = Format.smtlib;
+                }
+                else if(inputPath is not null){
+                    if(inputPath.FullName.EndsWith(".cnf")){
+                        format = Format.dimacs;
+                    }
+                    else if (inputPath.FullName.EndsWith(".sat")) {
+                        format = Format.smtlib;
+                    }
+                }
             }
             string? inputData = ReadFile(inputPath);
             if(!ErrorLogger.HadError){
                 IParser parser;
-                if(format == "smtlib"){
+                if(format == Format.smtlib){
                     parser = new SmtLibParser(new SmtLibScanner(inputData!).ScanTokens(), false);
                 }
                 else {
@@ -90,7 +155,7 @@ namespace Kresat {
                 }
                 CommonRepresentation cr = parser.ToCommonRepresentation();
                 Verdict verdict = new DPLLSolver(cr).Solve();
-                if(format == "smtlib"){
+                if(format == Format.smtlib){
                     WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
                 }
                 else{
@@ -125,15 +190,18 @@ namespace Kresat {
             }
         }
 
-        private static void TseitinHandler(FileInfo? inputPath, FileInfo? outputPath, bool useEquivalences)
+        private static void TseitinHandler(FileInfo? inputPath, FileInfo? outputPath, bool? useEquivalences)
         {
             string? inputData = ReadFile(inputPath);
+            if(!useEquivalences.HasValue){
+                useEquivalences = false;
+            }
             if(!ErrorLogger.HadError){
                 SmtLibScanner scanner = new(inputData!);
                 /*foreach(var token in scanner.ScanTokens()){
                     outputData += $"{token} ";
                 }*/
-                SmtLibParser parser = new(scanner.ScanTokens(), useEquivalences);
+                SmtLibParser parser = new(scanner.ScanTokens(), useEquivalences.Value);
                 WriteFile(outputPath, parser.ToCommonRepresentation().ToString());
             }
         }
