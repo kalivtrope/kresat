@@ -56,11 +56,12 @@ namespace Kresat.Representations {
       int clauseNo = clauseData.Count;
       foreach (var lit in clause){
         cd.AddLiteral();
+        //Console.WriteLine($"accessing index {LiteralIdx(lit)} of a literal {lit} at array of size {literalData.Length}");
         literalData[LiteralIdx(lit)].AddClause(clauseNo);
       }
       clauseData.Add(cd);
       if (cd.IsUnit()){
-        unitClauses.Add(clauseNo);
+        unitClauses.Push(clauseNo);
       }
     }
 
@@ -70,9 +71,10 @@ namespace Kresat.Representations {
     }
 
     public void UnitResolution(){
-      while(unitClauses.Count > 0){
-        int currClause = unitClauses.Min();
-        unitClauses.Remove(currClause);
+      while(unitClauses.Count > 0 && numConflictingClauses == 0){
+        int currClause = unitClauses.Pop();
+        //Console.WriteLine($"clauseData Count: {clauseData.Count} accessing {currClause}");
+        //CheckEqual(clauseData[currClause].IsUnit(), true);
         if(!clauseData[currClause].IsUnit()){
           continue;
         }
@@ -84,32 +86,29 @@ namespace Kresat.Representations {
         }
       }
     }
+
     private void AssignLiteral(int literal){
       decisions.Push(new Decision{ DecisionLevel = currDecisionLevel, Literal = literal});
       UndecidedVars.Remove(Math.Abs(literal));
       literalData[LiteralIdx(literal)].Value = Valuation.SATISFIED;
       literalData[LiteralIdx(-literal)].Value = Valuation.FALSIFIED;
       foreach (var clause in literalData[LiteralIdx(literal)].adjacentClauses){
-        if(clauseData[clause].IsUnit()){
-          unitClauses.Remove(clause);
-        }
         clauseData[clause].SatisfyLiteral();
-
       }
       foreach (var clause in literalData[LiteralIdx(-literal)].adjacentClauses){
         clauseData[clause].FalsifyLiteral();
         if(clauseData[clause].IsUnit()){
-          unitClauses.Add(clause);
+          unitClauses.Push(clause);
         }
         else{
           if(clauseData[clause].IsConflicting()){
             numConflictingClauses++;
           }
-          unitClauses.Remove(clause);
         }
       }
     }
     private void UndoLiteral(int literal){
+      unitClauses.Clear();
       CheckEqual(literalData[LiteralIdx(literal)].Value, Valuation.SATISFIED);
       CheckEqual(literalData[LiteralIdx(-literal)].Value, Valuation.FALSIFIED);
       UndecidedVars.Add(Math.Abs(literal));
@@ -118,10 +117,7 @@ namespace Kresat.Representations {
       foreach (var clause in literalData[LiteralIdx(literal)].adjacentClauses){
         clauseData[clause].UnsatisfyLiteral();
         if(clauseData[clause].IsUnit()){
-          unitClauses.Add(clause);
-        }
-        else{
-          unitClauses.Remove(clause);
+          unitClauses.Push(clause);
         }
       }
       foreach (var clause in literalData[LiteralIdx(-literal)].adjacentClauses){
@@ -130,10 +126,7 @@ namespace Kresat.Representations {
         }
         clauseData[clause].UnfalsifyLiteral();
         if(clauseData[clause].IsUnit()){
-          unitClauses.Add(clause);
-        }
-        else{
-          unitClauses.Remove(clause);
+          unitClauses.Push(clause);
         }
       }
     }
@@ -145,7 +138,7 @@ namespace Kresat.Representations {
             }
         }
 
-        record class ClauseData {
+    record class ClauseData {
       void CheckNonnegative(int val, string name){
         if (val < 0){
           ErrorLogger.Report(0, $"{name} became negative which should be impossible");
@@ -186,7 +179,7 @@ namespace Kresat.Representations {
     }
     List<ClauseData> clauseData = new();
     LiteralData[] literalData;
-    HashSet<int> unitClauses = new();
+    Stack<int> unitClauses = new();
 
     int LiteralIdx(int lit){
       if (lit < 0) {
