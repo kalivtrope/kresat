@@ -143,6 +143,11 @@ namespace Kresat.Parsers {
             for(int i = 1; i < intToId.Count; i++){
                 cr.AddComment($"{i} = {intToId[i]}{(IsGate(i) ? " ≡ " + gateExpr[GateId(i)] : null)}{(i == Math.Abs(rootId) ? " (root)" : null)}");
             }
+            List<string?> Mapping = new();
+            for(int i = 0; i < ID; i++){
+                Mapping.Add(IsGate(i) ? null : intToId[i]);
+            }
+            cr.OriginalMapping = Mapping;
             return cr.Build();
         }
     }

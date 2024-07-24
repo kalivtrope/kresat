@@ -2,6 +2,7 @@
 using Kresat.Parsers;
 using Kresat.Scanners;
 using Kresat.Solvers;
+using Kresat.Representations;
 using System.CommandLine;
 
 namespace Kresat {
@@ -87,7 +88,14 @@ namespace Kresat {
                 else {
                     parser = new DimacsParser(new DimacsScanner(inputData!).ScanTokens());
                 }
-                WriteFile(outputPath, new DPLLSolver(parser.ToCommonRepresentation()).Solve().ToString() + "\n");
+                CommonRepresentation cr = parser.ToCommonRepresentation();
+                Verdict verdict = new DPLLSolver(cr).Solve();
+                if(format == "smtlib"){
+                    WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
+                }
+                else{
+                    WriteFile(outputPath, verdict.ToString() + "\n");
+                }
             }
         }
 

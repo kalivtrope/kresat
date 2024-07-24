@@ -6,6 +6,7 @@ namespace Kresat.Representations {
         public required StringBuilder Comments { get; internal set; }
         public required int LiteralCount {get; internal set;}
         public required List<List<int>> Clauses { get; internal set; }
+        public List<string?>? OriginalMapping {get; init;}
 
         public override string ToString()
         {
@@ -28,6 +29,9 @@ namespace Kresat.Representations {
         List<int>? currClause;
         int? expectedClauseNum;
         int? expectedVarNum;
+
+        public List<string?>? OriginalMapping { get; internal set; }
+
         public void AddComment(string comment){
             comments.AppendJoin(separator:" ", "c", comment, "\n");
         }
@@ -78,6 +82,7 @@ namespace Kresat.Representations {
                 CheckEquals(expectedVarNum.Value, vars.Max(), "max variable number");
             }
             return new CommonRepresentation {
+                OriginalMapping = this.OriginalMapping,
                 Comments = comments,
                 LiteralCount = vars.Max(),
                 Clauses = clauses
