@@ -12,119 +12,24 @@ Disadvantages:
 
 */
 using Kresat.Loggers;
-
 namespace Kresat.Representations {
+    internal class AdjacencyListClause : IClause<AdjacencyListLiteral>,
+                   ICreateFromLiterals<AdjacencyListClause, AdjacencyListLiteral>{
+    /*
+    We use a counter-based approach to Adjacency lists
+      as described in
+      https://www.cs.cmu.edu/~15414/s23/s21/f18/lectures/20-sat-techniques.pdf
 
-  class AdjacencyLists {
-    public int currDecisionLevel {get; private set;} = 0;
-    public int numConflictingClauses = 0;
-    public int unitPropSteps {get;private set;} = 0;
-        /*
-          We use a counter-based approach to Adjacency lists
-          as described in
-          https://www.cs.cmu.edu/~15414/s23/s21/f18/lectures/20-sat-techniques.pdf
+    We need to maintain the following invariant:
+      Each time we assign l_i = true, we need to increase
+      the satisfied counter of all clauses c_i that contain l_i.
+      We also need to increase the satisfied counter of all clauses c_i
+      that contain \not l_i.
+    */
+        public List<int> Literals { get; set; }
+        public List<AdjacencyListLiteral> literalData { get; set; }
 
-          We need to maintain the following invariant:
-           Each time we assign l_i = true, we need to increase
-           the satisfied counter of all clauses c_i that contain l_i.
-           We also need to increase the satisfied counter of all clauses c_i
-           that contain \not l_i.
-        */
-    internal Stack<Decision> decisions = new();
-    HashSet<int> UndecidedVars = new();
-    public void Backtrack(int decisionLevel){
-      unitClauses.Clear();
-      while (decisions.Count > 0 && decisions.Peek().DecisionLevel > decisionLevel){
-        Decision decision = decisions.Pop();
-        UndoLiteral(decision.Literal);
-      }
-      currDecisionLevel = decisionLevel;
-    }
-    public void UndoLastLiteral(){
-      Backtrack(currDecisionLevel-1);
-    }
-    public void AddClause(IEnumerable<int> clause){
-      // assuming the literals in the clause are from the original variable range
-      ClauseData cd = new() { Literals = clause};
-      int clauseNo = clauseData.Count;
-      foreach (var lit in clause){
-        cd.AddLiteral();
-        //Console.WriteLine($"accessing index {LiteralIdx(lit)} of a literal {lit} at array of size {literalData.Length}");
-        literalData[LiteralIdx(lit)].AddClause(clauseNo);
-      }
-      clauseData.Add(cd);
-      if (cd.IsUnit()){
-        unitClauses.Push(clauseNo);
-      }
-    }
-
-    public void DecideLiteral(int literal){
-      currDecisionLevel++;
-      AssignLiteral(literal);
-    }
-
-    public void UnitPropagation(){
-      while(unitClauses.Count > 0 && numConflictingClauses == 0){
-        unitPropSteps++;
-        int currClause = unitClauses.Pop();
-        if(!clauseData[currClause].IsUnit()){
-          continue;
-        }
-        foreach(int lit in clauseData[currClause].Literals){
-          if(literalData[LiteralIdx(lit)].Value == Valuation.UNSATISFIED){
-            AssignLiteral(lit);
-            break;
-          }
-        }
-      }
-    }
-
-    private void AssignLiteral(int literal){
-      decisions.Push(new Decision{ DecisionLevel = currDecisionLevel, Literal = literal});
-      UndecidedVars.Remove(Math.Abs(literal));
-      literalData[LiteralIdx(literal)].Value = Valuation.SATISFIED;
-      literalData[LiteralIdx(-literal)].Value = Valuation.FALSIFIED;
-      foreach (var clause in literalData[LiteralIdx(literal)].adjacentClauses){
-        clauseData[clause].SatisfyLiteral();
-      }
-      foreach (var clause in literalData[LiteralIdx(-literal)].adjacentClauses){
-        clauseData[clause].FalsifyLiteral();
-        if(clauseData[clause].IsUnit()){
-          unitClauses.Push(clause);
-        }
-        else{
-          if(clauseData[clause].IsConflicting()){
-            numConflictingClauses++;
-          }
-        }
-      }
-    }
-    private void UndoLiteral(int literal){
-      CheckEqual(literalData[LiteralIdx(literal)].Value, Valuation.SATISFIED);
-      CheckEqual(literalData[LiteralIdx(-literal)].Value, Valuation.FALSIFIED);
-      UndecidedVars.Add(Math.Abs(literal));
-      literalData[LiteralIdx(literal)].Value = Valuation.UNSATISFIED;
-      literalData[LiteralIdx(-literal)].Value = Valuation.UNSATISFIED;
-      foreach (var clause in literalData[LiteralIdx(literal)].adjacentClauses){
-        clauseData[clause].UnsatisfyLiteral();
-      }
-      foreach (var clause in literalData[LiteralIdx(-literal)].adjacentClauses){
-        if(clauseData[clause].IsConflicting()){
-          numConflictingClauses--;
-        }
-        clauseData[clause].UnfalsifyLiteral();
-      }
-    }
-
-        private void CheckEqual(Valuation actual, Valuation expected)
-        {
-            if(actual != expected){
-              ErrorLogger.Report(0, $"Wrong Valuation: expected {expected}, got {actual}");
-            }
-        }
-
-    record class ClauseData {
-      void CheckNonnegative(int val, string name){
+        void CheckNonnegative(int val, string name){
         if (val < 0){
           ErrorLogger.Report(0, $"{name} became negative which should be impossible");
         }
@@ -133,7 +38,14 @@ namespace Kresat.Representations {
       int numFalsifiedLiterals;
       int numSatisfiedLiterals;
 
-      public required IEnumerable<int> Literals { get; internal set; }
+      public AdjacencyListClause(List<int> literals, List<AdjacencyListLiteral> literalData){
+        Literals = literals;
+        foreach(var literal in literals){
+          literalData.At(literal).AddClause(this);
+        }
+        this.literalData = literalData;
+      }
+
       public void AddLiteral(){
         numLiterals++;
       }
@@ -158,55 +70,68 @@ namespace Kresat.Representations {
       public bool IsSatisfied(){
         return numSatisfiedLiterals >= 1;
       }
-      public bool IsConflicting(){
+      public int GetUnitLiteral(){
+        foreach(var lit in Literals){
+          if(literalData.At(lit).Value == Valuation.UNSATISFIED){
+            return lit;
+          }
+        }
+        throw new ArgumentException();
+      }
+      public bool IsFalsified(){
         return numFalsifiedLiterals == numLiterals;
       }
-    }
-    List<ClauseData> clauseData = new();
-    LiteralData[] literalData;
-    Stack<int> unitClauses = new();
-
-    int LiteralIdx(int lit){
-      if (lit < 0) {
-        return -2*(lit + 1);
-      }
-      return 2*(lit - 1) + 1;
-    }
-    Valuation GetValuation(int lit){
-      return literalData[LiteralIdx(lit)].Value;
-    }
-
-        internal int ChooseDecisionLiteral()
+        public static AdjacencyListClause Create(List<int> literals, List<AdjacencyListLiteral> literalData)
         {
-            return UndecidedVars.First();
+            return new(literals, literalData);
         }
+    }
 
-        internal List<int> ConstructModel()
-        {
-          List<int> res = new List<int>();
-          for(int _var = 1; _var <= literalData.Length / 2; _var++){
-            res.Add(literalData[LiteralIdx(_var)].Value == Valuation.SATISFIED ? _var : -_var);
+    internal class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral>,
+                                          ICreateFromLiteralData<AdjacencyListLiteral>{
+        public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
+        public List<AdjacencyListClause> Clauses {get; private set;} = new();
+        public AdjacencyListLiteral(List<AdjacencyListLiteral> literalData){
+            this.literalData = literalData;
+        }
+        public List<AdjacencyListLiteral> literalData { get; set; }
+        public static AdjacencyListLiteral Create(List<AdjacencyListLiteral> literalData){
+            return new(literalData);
+        }
+        public void Falsify(){
+          Value = Valuation.FALSIFIED;
+          foreach(var clause in Clauses){
+            clause.FalsifyLiteral();
           }
-          return res;
         }
 
-    public AdjacencyLists(CommonRepresentation cr){
-      literalData = new LiteralData[2 * cr.LiteralCount];
-      for(int i = 0; i < literalData.Length; i++){
-        literalData[i] = new();
-      }
-      UndecidedVars = new HashSet<int>(Enumerable.Range(1, cr.LiteralCount));
-      foreach (var clause in cr.Clauses){
-        AddClause(clause);
-      }
-    }
+        public IEnumerable<IClause<AdjacencyListLiteral>> GetClauses(){
+            return Clauses;
+        }
+        public void Satisfy(){
+          Value = Valuation.SATISFIED;
+            foreach(var clause in Clauses){
+              clause.SatisfyLiteral();
+            }
+        }
+        public void Unsatisfy(){
+          foreach(var clause in Clauses){
+            if(Value == Valuation.FALSIFIED){
+              clause.UnfalsifyLiteral();
+            }
+            else{
+              clause.UnsatisfyLiteral();
+            }
+          }
+          Value = Valuation.UNSATISFIED;
+        }
 
-    private class LiteralData {
-      public Valuation Value = Valuation.UNSATISFIED;
-      public List<int> adjacentClauses = new();
-      public void AddClause(int clauseNo){
-        adjacentClauses.Add(clauseNo);
-      }
+        internal void AddClause(AdjacencyListClause clause){
+            Clauses.Add(clause);
+        }
     }
+    class AdjacencyLists : UnitPropagationDS<AdjacencyListLiteral, AdjacencyListClause> {
+
+    public AdjacencyLists(CommonRepresentation cr) : base(cr){}
   }
 }
