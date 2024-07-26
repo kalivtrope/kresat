@@ -87,7 +87,7 @@ namespace Kresat.Representations {
         }
     }
 
-    internal class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral>,
+    internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral>,
                                           ICreateFromLiteralData<AdjacencyListLiteral>{
         public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
         public List<AdjacencyListClause> Clauses {get; private set;} = new();

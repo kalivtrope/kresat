@@ -4,41 +4,38 @@ namespace Kresat.Solvers {
     class DPLLSolver {
         public int numDecisions {get;private set;} = 0;
         //AdjacencyLists AL;
-        WatchedLiterals WL;
+        UnitPropagationDS upds;
         CommonRepresentation cr;
         public DPLLSolver(CommonRepresentation cr){
             this.cr = cr;
             //AL = new(cr);
-            WL = new(cr);
+            upds = new AdjacencyLists(cr);
         }
         public Verdict Solve(){
-            //Console.WriteLine($"dl: {AL.currDecisionLevel}");
-            WL.UnitPropagation();
-            if(WL.HasContradiction){
+            upds.UnitPropagation();
+            if(upds.HasContradiction){
                 return new Verdict {Satisfiable = false};
             }
-            if(WL.decisions.Count == cr.LiteralCount){
-                return new Verdict {Satisfiable = true, Model = WL.ConstructModel()};
+            if(upds.decisions.Count == cr.LiteralCount){
+                return new Verdict {Satisfiable = true, Model = upds.ConstructModel()};
             }
-            if(WL.decisions.Count > cr.LiteralCount){
+            if(upds.decisions.Count > cr.LiteralCount){
                 throw new ArgumentException("corrupted stack :/");
             }
             numDecisions++;
-            int lit = WL.ChooseDecisionLiteral();
-            //Console.WriteLine($"deciding {lit}");
-            WL.DecideLiteral(lit);
+            int lit = upds.ChooseDecisionLiteral();
+            upds.DecideLiteral(lit);
             Verdict subresult = Solve();
             if(subresult.Satisfiable){
                 return subresult;
             } 
-            WL.UndoLastLiteral();
-            //Console.WriteLine($"deciding {-lit}");
-            WL.DecideLiteral(-lit);
+            upds.UndoLastLiteral();
+            upds.DecideLiteral(-lit);
             subresult = Solve();
             if(subresult.Satisfiable){
                 return subresult;
             }
-            WL.UndoLastLiteral();
+            upds.UndoLastLiteral();
             return new Verdict {Satisfiable = false};
             /*while(BCP()){
                 int backtrackLevel = AnalyzeConflict();

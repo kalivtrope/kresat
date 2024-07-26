@@ -114,7 +114,7 @@ namespace Kresat.Representations {
         return false;
       }
     }
-  internal class WatchLiteral : ILiteral<WatchLiteral>, ICreateFromLiteralData<WatchLiteral> {
+  internal sealed class WatchLiteral : ILiteral<WatchLiteral>, ICreateFromLiteralData<WatchLiteral> {
       public List<Watch> Watches = new();
       public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
       public List<WatchLiteral> literalData { get; set; }
