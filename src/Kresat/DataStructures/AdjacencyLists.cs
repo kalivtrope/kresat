@@ -40,14 +40,11 @@ namespace Kresat.Representations {
 
       public AdjacencyListClause(List<int> literals, List<AdjacencyListLiteral> literalData){
         Literals = literals;
+        numLiterals = literals.Count;
         foreach(var literal in literals){
           literalData.At(literal).AddClause(this);
         }
         this.literalData = literalData;
-      }
-
-      public void AddLiteral(){
-        numLiterals++;
       }
       public void FalsifyLiteral(){
         numFalsifiedLiterals++;
