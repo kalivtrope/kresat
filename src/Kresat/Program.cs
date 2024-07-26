@@ -4,6 +4,7 @@ using Kresat.Scanners;
 using Kresat.Solvers;
 using Kresat.Representations;
 using System.CommandLine;
+using System.Diagnostics;
 
 namespace Kresat {
     public class Program {
@@ -75,13 +76,13 @@ namespace Kresat {
 
             var useSmtlibOption = new Option<bool?>(
                 ["-c"],
-                description: $"Use {Format.smtlib}"
+                description: $"Use the {Format.smtlib} format"
             ){
                 Arity = ArgumentArity.Zero
             };
             var useDimacsOption = new Option<bool?>(
                 ["-s"],
-                description: $"Use {Format.dimacs}"
+                description: $"Use the {Format.dimacs} format"
             ){
                 Arity = ArgumentArity.Zero
             };
@@ -145,23 +146,33 @@ namespace Kresat {
                 }
             }
             string? inputData = ReadFile(inputPath);
-            if(!ErrorLogger.HadError){
-                IParser parser;
-                if(format == Format.smtlib){
-                    parser = new SmtLibParser(new SmtLibScanner(inputData!).ScanTokens(), false);
-                }
-                else {
-                    parser = new DimacsParser(new DimacsScanner(inputData!).ScanTokens());
-                }
-                CommonRepresentation cr = parser.ToCommonRepresentation();
-                Verdict verdict = new DPLLSolver(cr).Solve();
-                if(format == Format.smtlib){
-                    WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
-                }
-                else{
-                    WriteFile(outputPath, verdict.ToString() + "\n");
-                }
+            if(ErrorLogger.HadError){
+                return;    
             }
+            IParser parser;
+            if(format == Format.smtlib){
+                parser = new SmtLibParser(new SmtLibScanner(inputData!).ScanTokens(), false);
+            }
+            else {
+                parser = new DimacsParser(new DimacsScanner(inputData!).ScanTokens());
+            }
+            CommonRepresentation cr = parser.ToCommonRepresentation();
+            if(ErrorLogger.HadError){
+                return;
+            }
+            Stopwatch stopwatch = new Stopwatch();
+            DPLLSolver solver = new DPLLSolver(cr);
+            stopwatch.Start();
+            Verdict verdict = solver.Solve();
+            stopwatch.Stop();
+            if(format == Format.smtlib){
+                WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
+            }
+            else{
+                WriteFile(outputPath, verdict.ToString() + "\n");
+            }
+            WriteFile(outputPath, $"# of decisions: {solver.numDecisions}, # of propagated vars: {solver.unitPropSteps}\n");
+            WriteFile(outputPath, $"Elapsed time: {stopwatch.Elapsed}\n");
         }
 
         private static string? ReadFile(FileInfo? inputPath){

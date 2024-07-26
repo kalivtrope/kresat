@@ -1,16 +1,3 @@
-// associate the list of adjacent clauses with each *literal*
-/*
-Unit clause detection:
-  - counter of falsified literals in each clause
-  - remember if a clause is satisfied
-  - need to be updated during backtrack
-Disadvantages:
-  - long and slow to traverse
-  - clause states are checked too often
-    - only need to detect *unit* and *unsatisfied* clauses
-  - *satisfied* clauses can be detected lazily
-
-*/
 using Kresat.Loggers;
 namespace Kresat.Representations {
     internal class AdjacencyListClause : IClause<AdjacencyListLiteral>,

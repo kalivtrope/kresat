@@ -3,6 +3,7 @@ using Kresat.Representations;
 namespace Kresat.Solvers {
     class DPLLSolver {
         public int numDecisions {get;private set;} = 0;
+        public int unitPropSteps {get => upds.unitPropSteps;}
         //AdjacencyLists AL;
         UnitPropagationDS upds;
         CommonRepresentation cr;

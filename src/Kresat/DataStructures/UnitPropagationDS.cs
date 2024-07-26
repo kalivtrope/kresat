@@ -141,7 +141,6 @@ namespace Kresat.Representations {
         }
         public sealed override void UnitPropagation(){
             while(unitClauses.Count > 0 && !HasContradiction){
-                unitPropSteps++;
                 TClause currClause = unitClauses.Pop();
                 if(!currClause.IsUnit()){
                     if(currClause.IsFalsified()){
@@ -149,6 +148,7 @@ namespace Kresat.Representations {
                     }
                     continue;
                 }
+                unitPropSteps++;
                 int lit = currClause.GetUnitLiteral();
                 AssignLiteral(lit);
             }      
