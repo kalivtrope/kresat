@@ -7,11 +7,16 @@ using System.CommandLine;
 using System.Diagnostics;
 
 namespace Kresat {
+    internal enum UnitPropType {
+        adjacency,
+        watched
+    }
     public class Program {
         enum Format {
             dimacs,
             smtlib
         }
+
         public static string? ReadFileContents(string path){
             try {
                 StreamReader sr = new StreamReader(path);
@@ -74,6 +79,21 @@ namespace Kresat {
             }
             );
 
+            var unitPropagationDSOption = new Option<UnitPropType?>(
+                ["--unit-prop", "-u"],
+                description: $"Specify unit propagation data structure",
+                getDefaultValue: () => UnitPropType.watched
+            ){};
+
+            unitPropagationDSOption.AddValidator( v => {
+                try {
+                    var x = v.GetValueOrDefault<UnitPropType?>();
+                }
+                catch {
+                    v.ErrorMessage = $"Invalid unit propagation data structure: got '{v.GetValueOrDefault<string>()}', expected one of '{UnitPropType.adjacency} or '{UnitPropType.watched}'";
+                }
+            });
+
             var useSmtlibOption = new Option<bool?>(
                 ["-c"],
                 description: $"Use the {Format.smtlib} format"
@@ -91,7 +111,8 @@ namespace Kresat {
                 inputArgument,
                 outputArgument,
                 useSmtlibOption,
-                useDimacsOption
+                useDimacsOption,
+                unitPropagationDSOption
             };
             solveCommand.AddValidator( (result) => {
                 var res = result.FindResultFor(inputArgument);
@@ -117,7 +138,7 @@ namespace Kresat {
                 }
             } );
             solveCommand.SetHandler(SolveHandler, formatOption, inputArgument, outputArgument,
-                                    useSmtlibOption, useDimacsOption);
+                                    useSmtlibOption, useDimacsOption, unitPropagationDSOption);
 
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
@@ -127,7 +148,7 @@ namespace Kresat {
         }
 
         private static void SolveHandler(Format? format, FileInfo? inputPath, FileInfo? outputPath,
-                                         bool? useSmtlib, bool? useDimacs)
+                                         bool? useSmtlib, bool? useDimacs, UnitPropType? unitProp)
         {
             if(format is null){
                 if(useDimacs.HasValue && useDimacs.Value){
@@ -145,6 +166,9 @@ namespace Kresat {
                     }
                 }
             }
+            if(unitProp is null){
+                unitProp = UnitPropType.watched;
+            }
             string? inputData = ReadFile(inputPath);
             if(ErrorLogger.HadError){
                 return;    
@@ -161,7 +185,7 @@ namespace Kresat {
                 return;
             }
             Stopwatch stopwatch = new Stopwatch();
-            DPLLSolver solver = new DPLLSolver(cr);
+            DPLLSolver solver = new DPLLSolver(cr, unitProp.Value);
             stopwatch.Start();
             Verdict verdict = solver.Solve();
             stopwatch.Stop();
@@ -172,7 +196,7 @@ namespace Kresat {
                 WriteFile(outputPath, verdict.ToString() + "\n");
             }
             WriteFile(outputPath, $"# of decisions: {solver.numDecisions}, # of propagated vars: {solver.unitPropSteps}\n");
-            WriteFile(outputPath, $"Elapsed time: {stopwatch.Elapsed}\n");
+            WriteFile(outputPath, $"Elapsed time: {stopwatch.Elapsed}\n\n");
         }
 
         private static string? ReadFile(FileInfo? inputPath){

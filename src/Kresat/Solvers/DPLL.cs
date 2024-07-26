@@ -1,16 +1,22 @@
 using Kresat.Representations;
+using Kresat;
 
 namespace Kresat.Solvers {
     class DPLLSolver {
         public int numDecisions {get;private set;} = 0;
         public int unitPropSteps {get => upds.unitPropSteps;}
+
         //AdjacencyLists AL;
         UnitPropagationDS upds;
         CommonRepresentation cr;
-        public DPLLSolver(CommonRepresentation cr){
+        public DPLLSolver(CommonRepresentation cr, UnitPropType unitProp){
             this.cr = cr;
-            //AL = new(cr);
-            upds = new AdjacencyLists(cr);
+            if(unitProp == UnitPropType.adjacency){
+                upds = new AdjacencyLists(cr);
+            }
+            else{
+                upds = new WatchedLiterals(cr);
+            }
         }
         public Verdict Solve(){
             upds.UnitPropagation();
