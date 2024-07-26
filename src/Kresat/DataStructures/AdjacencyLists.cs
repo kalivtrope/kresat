@@ -14,14 +14,11 @@ Disadvantages:
 using Kresat.Loggers;
 
 namespace Kresat.Representations {
-  enum Valuation {
-    FALSIFIED,
-    UNSATISFIED,
-    SATISFIED
-  }
+
   class AdjacencyLists {
     public int currDecisionLevel {get; private set;} = 0;
     public int numConflictingClauses = 0;
+    public int unitPropSteps {get;private set;} = 0;
         /*
           We use a counter-based approach to Adjacency lists
           as described in
@@ -33,24 +30,13 @@ namespace Kresat.Representations {
            We also need to increase the satisfied counter of all clauses c_i
            that contain \not l_i.
         */
-
-        internal record struct Decision {
-            public int DecisionLevel { get; internal set; }
-            public int Literal { get; internal set; }
-        }
-        internal Stack<Decision> decisions = new();
-        SortedSet<int> UndecidedVars = new();
+    internal Stack<Decision> decisions = new();
+    HashSet<int> UndecidedVars = new();
     public void Backtrack(int decisionLevel){
-      bool refilled = false;
+      unitClauses.Clear();
       while (decisions.Count > 0 && decisions.Peek().DecisionLevel > decisionLevel){
         Decision decision = decisions.Pop();
-        bool shouldRefill = decisions.Count <= 0 || decisions.Peek().DecisionLevel <= decisionLevel; 
-        UndoLiteral(decision.Literal,
-                    refillUnits: shouldRefill);
-        refilled |= shouldRefill;
-      }
-      if(!refilled){
-        Console.Error.WriteLine("ERROR: DID NOT REFILL");
+        UndoLiteral(decision.Literal);
       }
       currDecisionLevel = decisionLevel;
     }
@@ -79,9 +65,8 @@ namespace Kresat.Representations {
 
     public void UnitPropagation(){
       while(unitClauses.Count > 0 && numConflictingClauses == 0){
+        unitPropSteps++;
         int currClause = unitClauses.Pop();
-        //Console.WriteLine($"clauseData Count: {clauseData.Count} accessing {currClause}");
-        //CheckEqual(clauseData[currClause].IsUnit(), true);
         if(!clauseData[currClause].IsUnit()){
           continue;
         }
@@ -114,10 +99,7 @@ namespace Kresat.Representations {
         }
       }
     }
-    private void UndoLiteral(int literal, bool refillUnits){
-      if(refillUnits){
-        unitClauses.Clear();
-      }
+    private void UndoLiteral(int literal){
       CheckEqual(literalData[LiteralIdx(literal)].Value, Valuation.SATISFIED);
       CheckEqual(literalData[LiteralIdx(-literal)].Value, Valuation.FALSIFIED);
       UndecidedVars.Add(Math.Abs(literal));
@@ -125,18 +107,12 @@ namespace Kresat.Representations {
       literalData[LiteralIdx(-literal)].Value = Valuation.UNSATISFIED;
       foreach (var clause in literalData[LiteralIdx(literal)].adjacentClauses){
         clauseData[clause].UnsatisfyLiteral();
-        if(refillUnits && clauseData[clause].IsUnit()){
-          unitClauses.Push(clause);
-        }
       }
       foreach (var clause in literalData[LiteralIdx(-literal)].adjacentClauses){
         if(clauseData[clause].IsConflicting()){
           numConflictingClauses--;
         }
         clauseData[clause].UnfalsifyLiteral();
-        if(refillUnits && clauseData[clause].IsUnit()){
-          unitClauses.Push(clause);
-        }
       }
     }
 
@@ -202,13 +178,13 @@ namespace Kresat.Representations {
 
         internal int ChooseDecisionLiteral()
         {
-            return UndecidedVars.Min();
+            return UndecidedVars.First();
         }
 
         internal List<int> ConstructModel()
         {
           List<int> res = new List<int>();
-          for(int _var = 1; _var <= literalData.Length /2; _var++){
+          for(int _var = 1; _var <= literalData.Length / 2; _var++){
             res.Add(literalData[LiteralIdx(_var)].Value == Valuation.SATISFIED ? _var : -_var);
           }
           return res;
@@ -219,7 +195,7 @@ namespace Kresat.Representations {
       for(int i = 0; i < literalData.Length; i++){
         literalData[i] = new();
       }
-      UndecidedVars = new SortedSet<int>(Enumerable.Range(1, cr.LiteralCount));
+      UndecidedVars = new HashSet<int>(Enumerable.Range(1, cr.LiteralCount));
       foreach (var clause in cr.Clauses){
         AddClause(clause);
       }
