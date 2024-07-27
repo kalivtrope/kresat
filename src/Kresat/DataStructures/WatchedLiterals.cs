@@ -10,8 +10,8 @@
 namespace Kresat.Representations {
     internal class WatchClause : IClause<WatchLiteral>,
                                  ICreateFromLiterals<WatchClause, WatchLiteral> {
-      public Watch? w1 {get; private set;}
-      public Watch? w2 {get; private set;}
+      Watch? w1 {get; set;}
+      Watch? w2 {get; set;}
       public List<int> Literals {get;set;}
       public List<WatchLiteral> literalData {get;set;}
       public static WatchClause Create(List<int> literals, List<WatchLiteral> literalData){
@@ -67,7 +67,7 @@ namespace Kresat.Representations {
       public override string ToString(){
         return $"literals: {string.Join(' ',
                             Literals.Select(l => l.ToString() + '/' + literalData.At(l).Value.ToString()))
-                            } unit: {IsUnit()} falsified: {IsFalsified()} watches: {(Literals.Count == 1 ? null : w1.LitPos.ToString() + ' ' + w2.LitPos.ToString())}";
+                            } unit: {IsUnit()} falsified: {IsFalsified()} watches: {(Literals.Count == 1 ? null : w1.LitIdx.ToString() + ' ' + w2.LitIdx.ToString())}";
       }
       public Watch GetOtherWatch(Watch w){
         if(w == w1){
@@ -78,26 +78,28 @@ namespace Kresat.Representations {
         }
         throw new ArgumentException(nameof(w));
       }
-      public Valuation GetValue(int pos){
-        return literalData.At(Literals[pos]).Value;
+      public Valuation GetValue(int litIdx){
+        return literalData.At(litIdx).Value;
       }
       public int GetLiteralForWatch(Watch w){
-        return Literals[w.LitPos];
+        return w.LitIdx;
       }
       public Valuation GetValue(Watch w){
-        return GetValue(w.LitPos);
+        return GetValue(w.LitIdx);
       }
     }
 
   internal class Watch {
       public WatchClause clause;
-      public int LitPos {get; private set;} = 0;
+      int LitPos = 0;
+      public int LitIdx;
       public Watch(int LitPos, WatchClause clause){
         this.clause = clause;
         this.LitPos = LitPos;
+        LitIdx = clause.Literals[LitPos];
       }
       bool CanBeWatched(int pos){
-        return clause.GetValue(pos) != Valuation.FALSIFIED
+        return clause.GetValue(clause.Literals[pos]) != Valuation.FALSIFIED
             && clause.GetOtherWatch(this).LitPos != pos;
       }
       public bool FindNext(){
@@ -107,6 +109,7 @@ namespace Kresat.Representations {
         do {
           if(CanBeWatched(currPos)){
             LitPos = currPos;
+            LitIdx = clause.Literals[LitPos];
             return true;
           }
           currPos = (currPos + 1) % clause.Literals.Count;
@@ -136,10 +139,10 @@ namespace Kresat.Representations {
       public void Falsify(){
         Value = Valuation.FALSIFIED;
         for(int i = 0; i < Watches.Count; i++){
-          int prev = Watches[i].LitPos;
+          int prev = Watches[i].LitIdx;
           if(Watches[i].FindNext()){
-            int newLit = Watches[i].clause.Literals[Watches[i].LitPos];
-            if(prev == Watches[i].LitPos){
+            int newLit = Watches[i].LitIdx;
+            if(prev == Watches[i].LitIdx){
               throw new ArgumentException("aaa");
             }
             literalData.At(newLit).Watches.Add(Watches[i]);

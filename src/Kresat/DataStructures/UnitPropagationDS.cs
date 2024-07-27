@@ -141,6 +141,7 @@ namespace Kresat.Representations {
         }
         public sealed override void UnitPropagation(){
             while(unitClauses.Count > 0 && !HasContradiction){
+                //Console.WriteLine(string.Join(' ', unitClauses.ToList().Select(c=>clauseData.IndexOf(c))));
                 TClause currClause = unitClauses.Pop();
                 if(!currClause.IsUnit()){
                     if(currClause.IsFalsified()){
