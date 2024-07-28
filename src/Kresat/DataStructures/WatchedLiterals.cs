@@ -10,36 +10,6 @@
 namespace Kresat.Representations {
     internal class WatchClause : IClause<WatchLiteral>,
                                  ICreateFromLiterals<WatchClause, WatchLiteral> {
-    internal class Watch {
-      public int LitPos = 0;
-      public WatchLiteral Literal;
-      WatchClause clause;
-      public Watch(int LitPos, WatchClause clause){
-        this.LitPos = LitPos;
-        this.clause = clause;
-        this.Literal = clause.Literals[LitPos]; 
-      }
-      bool CanBeWatched(int pos){
-        return clause.Literals[pos].Value != Valuation.FALSIFIED
-            && clause.GetOtherWatchPos(this) != pos;
-      }
-      public bool FindNext(){
-        // returns false if there's no unwatched unsatisfied literal left in the clause
-        int startPos = LitPos;
-        int currPos = startPos;
-        do {
-          if(CanBeWatched(currPos)){
-            LitPos = currPos;
-            Literal = clause.Literals[LitPos];
-            return true;
-          }
-          currPos = (currPos + 1) % clause.Literals.Count;
-        } while(currPos != startPos);
-        return false;
-      }
-    }
-      Watch? w1 {get; set;}
-      Watch? w2 {get; set;}
       public List<WatchLiteral> Literals {get;set;}
       public static WatchClause Create(List<WatchLiteral> _literals){
         return new WatchClause(_literals);
@@ -48,16 +18,46 @@ namespace Kresat.Representations {
         this.Literals = _literals;
         ConstructWatches();
       }
+      public bool IsSatisfied(){
+        return (Literals.Count == 1 && Literals[0].Value == Valuation.SATISFIED)
+        || (Literals.Count >= 2 && (Literals[0].Value == Valuation.SATISFIED || Literals[1].Value == Valuation.SATISFIED)); 
+      }
+
+      bool CanBeWatched(int pos){
+        return Literals[pos].Value != Valuation.FALSIFIED;
+      }
+      int[] LastPos = [1,1];
       void ConstructWatches(){
         if(Literals.Count <= 1){
           return;
         }
-        w1 = new Watch(LitPos: 0, clause: this);
-        w2 = new Watch(LitPos: 1, clause: this);
-        w1.FindNext();
-        w2.FindNext();
-        GetLiteralForWatch(w1).ClausesWithWatch.Add(this);
-        GetLiteralForWatch(w2).ClausesWithWatch.Add(this);
+        FindNext(0);
+        FindNext(1);
+        Literals[0].ClausesWithWatch.Add(this);
+        Literals[1].ClausesWithWatch.Add(this);
+      }
+      void FindNext(int litIdx){
+        if(Literals.Count <= 2){
+          return;
+        }
+        if(CanBeWatched(litIdx)){
+          return;
+        }
+        int startPos = LastPos[litIdx]+1;
+        if(startPos >= Literals.Count){
+          startPos = 2;
+        }
+        int currPos = startPos;
+        do {
+          if(CanBeWatched(currPos)){
+            Literals.Swap(litIdx, currPos);
+            LastPos[litIdx] = currPos;
+            break;
+          }
+          currPos++;
+          if(currPos >= Literals.Count)
+            currPos = 2;
+        } while(currPos != startPos);
       }
       public bool IsUnit(){  
         //  i) clause is unit if it has size 1 and the only literal is unsatisfied   
@@ -65,57 +65,40 @@ namespace Kresat.Representations {
         //     and the other watch points to an unsatisfied literal
         return  (Literals.Count == 1 && Literals[0].Value == Valuation.UNSATISFIED)
              || (Literals.Count >= 2 && (
-                 (GetValue(w1!) == Valuation.UNSATISFIED && GetValue(w2!) == Valuation.FALSIFIED)
-                  || (GetValue(w2!) == Valuation.UNSATISFIED && GetValue(w1!) == Valuation.FALSIFIED)
+                 (Literals[0].Value == Valuation.UNSATISFIED && Literals[1].Value == Valuation.FALSIFIED)
+                  || (Literals[1].Value == Valuation.UNSATISFIED && Literals[0].Value == Valuation.FALSIFIED)
              ));
       }
       public bool IsFalsified(){
         return (Literals.Count == 1 && Literals[0].Value == Valuation.FALSIFIED)
               || (Literals.Count >= 2 && (
-                GetValue(w1!) == Valuation.FALSIFIED && GetValue(w2!) == Valuation.FALSIFIED
+                Literals[0].Value == Valuation.FALSIFIED && Literals[1].Value == Valuation.FALSIFIED
               ));
       }
 
       public WatchLiteral GetUnitLiteral(){
-        if(w1 is null){
+        if(Literals.Count == 1){
           return Literals[0];
         }
-        else if(GetValue(w1) == Valuation.UNSATISFIED){
-          return GetLiteralForWatch(w1);
+        else if(Literals[0].Value == Valuation.UNSATISFIED){
+          return Literals[0];
         }
         else{
-          if(GetValue(w2) != Valuation.UNSATISFIED){
-              throw new ArgumentException(nameof(w2));
+          if(Literals[1].Value != Valuation.UNSATISFIED){
+              throw new Exception(Literals[1].ToString());
           }
-          return GetLiteralForWatch(w2);  
-        }
-      }
-      int GetOtherWatchPos(Watch w){
-        if(w == w1){
-          return w2!.LitPos;
-        }
-        else{
-          return w1!.LitPos;
+          return Literals[1]; 
         }
       }
       public WatchLiteral FindNextForLiteral(WatchLiteral literal){
-        if(literal == w1!.Literal){
-          w1.FindNext();
-          return w1.Literal;
+        if(literal == Literals[0]){
+          FindNext(0);
+          return Literals[0];
         }
         else{
-          w2!.FindNext();
-          return w2.Literal;
+          FindNext(1);
+          return Literals[1];
         }
-      }
-      public Valuation GetValue(int litPos){
-        return Literals[litPos].Value;
-      }
-      public WatchLiteral GetLiteralForWatch(Watch w){
-        return w.Literal;
-      }
-      public Valuation GetValue(Watch w){
-        return w.Literal.Value;
       }
     }
 
@@ -130,13 +113,16 @@ namespace Kresat.Representations {
       }
       public IEnumerable<IClause<WatchLiteral>> GetClauses(){
         foreach(var clause in ClausesWithWatch){
-          yield return clause;
+          if(!clause.IsSatisfied()){
+            yield return clause;
+          }
         }
       }
       public void Falsify(){
         Value = Valuation.FALSIFIED;
         for(int i = 0; i < ClausesWithWatch.Count; i++){
           var currClause = ClausesWithWatch[i];
+          if(currClause.IsSatisfied()) continue;
           WatchLiteral newLit = currClause.FindNextForLiteral(this);
           if(newLit != this){
             newLit.ClausesWithWatch.Add(currClause);
