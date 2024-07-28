@@ -96,13 +96,13 @@ namespace Kresat {
 
             var useSmtlibOption = new Option<bool?>(
                 ["-c"],
-                description: $"Use the {Format.smtlib} format"
+                description: $"Use {Format.smtlib} format"
             ){
                 Arity = ArgumentArity.Zero
             };
             var useDimacsOption = new Option<bool?>(
                 ["-s"],
-                description: $"Use the {Format.dimacs} format"
+                description: $"Use {Format.dimacs} format"
             ){
                 Arity = ArgumentArity.Zero
             };

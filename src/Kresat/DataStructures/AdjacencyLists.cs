@@ -71,7 +71,7 @@ namespace Kresat.Representations {
     internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral> {
         public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
         public List<AdjacencyListClause> Clauses {get; private set;} = new();
-        public AdjacencyListLiteral Other { get; set; }
+        public AdjacencyListLiteral Opposite { get; set; }
         public int LitNum { get; set; }
         public void Falsify(){
           Value = Valuation.FALSIFIED;

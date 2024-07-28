@@ -124,7 +124,7 @@ namespace Kresat.Representations {
       public List<WatchClause> ClausesWithWatch = new();
       public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
       public int LitNum {get;set;}
-      public WatchLiteral Other { get; set; }
+      public WatchLiteral Opposite { get; set; }
       public void Satisfy(){
         Value = Valuation.SATISFIED;
       }

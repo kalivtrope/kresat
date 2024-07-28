@@ -12,19 +12,20 @@ namespace Kresat.Representations {
         static abstract TClause Create(List<TLiteral> _literals);
     }
     interface IClause<TLiteral> where TLiteral : ILiteral<TLiteral> {
+        public List<TLiteral> Literals {get;}
         bool IsUnit();
         bool IsFalsified();
         TLiteral GetUnitLiteral();
     }
     interface ILiteral<TLiteral> where TLiteral : ILiteral<TLiteral> {
         public Valuation Value {get;}
-        public TLiteral Other {get;set;}
+        public TLiteral Opposite {get;set;}
         public int LitNum {get;set;}
         public void AssignLitNum(int LitNum){
             this.LitNum = LitNum;
         }
-        public void SetOther(TLiteral Other){
-            this.Other = Other;
+        public void SetOther(TLiteral Opposite){
+            this.Opposite = Opposite;
         }
         void Satisfy();
         void Falsify();
@@ -95,7 +96,7 @@ namespace Kresat.Representations {
         private void UndoLiteral(TLiteral literal){
             UndecidedVars.Add(Math.Abs(literal.LitNum));
             literal.Unsatisfy();
-            literal.Other.Unsatisfy();
+            literal.Opposite.Unsatisfy();
         }
         public sealed override void DecideLiteral(int literal){
             currDecisionLevel++;
@@ -126,8 +127,8 @@ namespace Kresat.Representations {
             decisions.Push(new Decision<TLiteral> { DecisionLevel = currDecisionLevel, Literal = literal });
             UndecidedVars.Remove(Math.Abs(literal.LitNum));
             literal.Satisfy();
-            literal.Other.Falsify();
-            foreach(TClause clause in literal.Other.GetClauses()){
+            literal.Opposite.Falsify();
+            foreach(TClause clause in literal.Opposite.GetClauses()){
                 if(clause.IsUnit()){
                     unitClauses.Push(clause);
                 }
