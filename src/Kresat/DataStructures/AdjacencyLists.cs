@@ -13,10 +13,8 @@ namespace Kresat.Representations {
       We also need to increase the satisfied counter of all clauses c_i
       that contain \not l_i.
     */
-        public List<int> Literals { get; set; }
-        public List<AdjacencyListLiteral> literalData { get; set; }
-
-        void CheckNonnegative(int val, string name){
+      public List<AdjacencyListLiteral> Literals { get; set; }
+      void CheckNonnegative(int val, string name){
         if (val < 0){
           ErrorLogger.Report(0, $"{name} became negative which should be impossible");
         }
@@ -25,13 +23,12 @@ namespace Kresat.Representations {
       int numFalsifiedLiterals;
       int numSatisfiedLiterals;
 
-      public AdjacencyListClause(List<int> literals, List<AdjacencyListLiteral> literalData){
-        Literals = literals;
-        numLiterals = literals.Count;
-        foreach(var literal in literals){
-          literalData.At(literal).AddClause(this);
+      public AdjacencyListClause(List<AdjacencyListLiteral> _literals){
+        Literals = _literals;
+        numLiterals = _literals.Count;
+        foreach(var literal in _literals){
+          literal.AddClause(this);
         }
-        this.literalData = literalData;
       }
       public void FalsifyLiteral(){
         numFalsifiedLiterals++;
@@ -54,9 +51,9 @@ namespace Kresat.Representations {
       public bool IsSatisfied(){
         return numSatisfiedLiterals >= 1;
       }
-      public int GetUnitLiteral(){
+      public AdjacencyListLiteral GetUnitLiteral(){
         foreach(var lit in Literals){
-          if(literalData.At(lit).Value == Valuation.UNSATISFIED){
+          if(lit.Value == Valuation.UNSATISFIED){
             return lit;
           }
         }
@@ -65,30 +62,23 @@ namespace Kresat.Representations {
       public bool IsFalsified(){
         return numFalsifiedLiterals == numLiterals;
       }
-        public static AdjacencyListClause Create(List<int> literals, List<AdjacencyListLiteral> literalData)
+        public static AdjacencyListClause Create(List<AdjacencyListLiteral> _literals)
         {
-            return new(literals, literalData);
+            return new(_literals);
         }
     }
 
-    internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral>,
-                                          ICreateFromLiteralData<AdjacencyListLiteral>{
+    internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral> {
         public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
         public List<AdjacencyListClause> Clauses {get; private set;} = new();
-        public AdjacencyListLiteral(List<AdjacencyListLiteral> literalData){
-            this.literalData = literalData;
-        }
-        public List<AdjacencyListLiteral> literalData { get; set; }
-        public static AdjacencyListLiteral Create(List<AdjacencyListLiteral> literalData){
-            return new(literalData);
-        }
+        public AdjacencyListLiteral Other { get; set; }
+        public int LitNum { get; set; }
         public void Falsify(){
           Value = Valuation.FALSIFIED;
           foreach(var clause in Clauses){
             clause.FalsifyLiteral();
           }
         }
-
         public IEnumerable<IClause<AdjacencyListLiteral>> GetClauses(){
             return Clauses;
         }
@@ -109,7 +99,6 @@ namespace Kresat.Representations {
           }
           Value = Valuation.UNSATISFIED;
         }
-
         internal void AddClause(AdjacencyListClause clause){
             Clauses.Add(clause);
         }

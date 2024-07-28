@@ -23,11 +23,8 @@ namespace Kresat.Solvers {
             if(upds.HasContradiction){
                 return new Verdict {Satisfiable = false};
             }
-            if(upds.decisions.Count == cr.LiteralCount){
+            if(upds.AllVariablesAssigned()){
                 return new Verdict {Satisfiable = true, Model = upds.ConstructModel()};
-            }
-            if(upds.decisions.Count > cr.LiteralCount){
-                throw new ArgumentException("corrupted stack :/");
             }
             numDecisions++;
             int lit = upds.ChooseDecisionLiteral();

@@ -4,26 +4,28 @@ namespace Kresat.Representations {
         UNSATISFIED,
         SATISFIED
     }
-    internal record struct Decision {
+    internal record struct Decision<TLiteral> {
         public int DecisionLevel { get; internal set; }
-        public int Literal { get; internal set; }
+        public TLiteral Literal { get; internal set; }
     }
     interface ICreateFromLiterals<TClause, TLiteral> {
-        static abstract TClause Create(List<int> literals, List<TLiteral> literalData);
-    }
-    interface ICreateFromLiteralData<TLiteral> {
-        static abstract TLiteral Create(List<TLiteral> literalData);
+        static abstract TClause Create(List<TLiteral> _literals);
     }
     interface IClause<TLiteral> where TLiteral : ILiteral<TLiteral> {
-        public List<int> Literals {get;set;}
-        public List<TLiteral> literalData {get;set;}
         bool IsUnit();
         bool IsFalsified();
-        int GetUnitLiteral();
+        TLiteral GetUnitLiteral();
     }
     interface ILiteral<TLiteral> where TLiteral : ILiteral<TLiteral> {
         public Valuation Value {get;}
-        public List<TLiteral> literalData {get;set;}
+        public TLiteral Other {get;set;}
+        public int LitNum {get;set;}
+        public void AssignLitNum(int LitNum){
+            this.LitNum = LitNum;
+        }
+        public void SetOther(TLiteral Other){
+            this.Other = Other;
+        }
         void Satisfy();
         void Falsify();
         void Unsatisfy();
@@ -51,11 +53,7 @@ namespace Kresat.Representations {
         public bool HasContradiction = false;
         public int currDecisionLevel = 0;
         public int unitPropSteps = 0;
-        internal record struct Decision {
-            public int DecisionLevel { get; internal set; }
-            public int Literal { get; internal set; }
-        }
-        internal Stack<Decision> decisions = new();
+
         protected HashSet<int> UndecidedVars = new();
         public abstract void Backtrack(int decisionLevel);
         public abstract void DecideLiteral(int literal);
@@ -65,33 +63,43 @@ namespace Kresat.Representations {
         public void UndoLastLiteral(){
             Backtrack(currDecisionLevel-1);
         }
+        public abstract bool AllVariablesAssigned();
         public abstract void UnitPropagation();
         public abstract List<int> ConstructModel();
     }
-    abstract class UnitPropagationDS<TLiteral, TClause> : UnitPropagationDS where TLiteral : ILiteral<TLiteral>, ICreateFromLiteralData<TLiteral>
+    abstract class UnitPropagationDS<TLiteral, TClause> : UnitPropagationDS where TLiteral : ILiteral<TLiteral>, new()
                                                         where TClause : IClause<TLiteral>, ICreateFromLiterals<TClause, TLiteral> {
         List<TLiteral> literalData;
         List<TClause> clauseData;
         Stack<TClause> unitClauses = new();
+    
+        Stack<Decision<TLiteral>> decisions = new();
 
+        public sealed override bool AllVariablesAssigned()
+        {
+            if(decisions.Count > literalData.Count / 2){
+                throw new Exception("corrupted stack");
+            }
+            return decisions.Count == literalData.Count / 2;
+        }
         public sealed override void Backtrack(int decisionLevel){
             HasContradiction = false;
             unitClauses.Clear();
             while(decisions.Count > 0 && decisions.Peek().DecisionLevel > decisionLevel){
-                Decision decision = decisions.Pop();
+                Decision<TLiteral> decision = decisions.Pop();
                 UndoLiteral(decision.Literal);
             }
             currDecisionLevel = decisionLevel;
         }
 
-        private void UndoLiteral(int literal){
-            UndecidedVars.Add(Math.Abs(literal));
-            literalData.At(literal).Unsatisfy();;
-            literalData.At(-literal).Unsatisfy();
+        private void UndoLiteral(TLiteral literal){
+            UndecidedVars.Add(Math.Abs(literal.LitNum));
+            literal.Unsatisfy();
+            literal.Other.Unsatisfy();
         }
         public sealed override void DecideLiteral(int literal){
             currDecisionLevel++;
-            AssignLiteral(literal);
+            AssignLiteral(literalData.At(literal));
         }
 
         public sealed override List<int> ConstructModel(){
@@ -105,20 +113,21 @@ namespace Kresat.Representations {
             return res;
         }
 
-        private void AddClause(List<int> literals, List<TLiteral> literalData){
-            TClause clause = TClause.Create(literals, literalData);
+        private void AddClause(List<int> literals){
+            List<TLiteral> _literals = literals.Select(x => literalData.At(x)).ToList();
+            TClause clause = TClause.Create(_literals);
             clauseData.Add(clause);
             if(clause.IsUnit()){
                 unitClauses.Push(clause);
             }
         }
 
-        private void AssignLiteral(int literal){
-            decisions.Push(new Decision { DecisionLevel = currDecisionLevel, Literal = literal });
-            UndecidedVars.Remove(Math.Abs(literal));
-            literalData.At(literal).Satisfy();
-            literalData.At(-literal).Falsify();
-            foreach(TClause clause in literalData.At(-literal).GetClauses()){
+        private void AssignLiteral(TLiteral literal){
+            decisions.Push(new Decision<TLiteral> { DecisionLevel = currDecisionLevel, Literal = literal });
+            UndecidedVars.Remove(Math.Abs(literal.LitNum));
+            literal.Satisfy();
+            literal.Other.Falsify();
+            foreach(TClause clause in literal.Other.GetClauses()){
                 if(clause.IsUnit()){
                     unitClauses.Push(clause);
                 }
@@ -131,12 +140,18 @@ namespace Kresat.Representations {
         public UnitPropagationDS(CommonRepresentation cr){
             literalData = new List<TLiteral>( new TLiteral[2*cr.LiteralCount]);
             for(int i = 0; i < literalData.Count; i++){
-                literalData[i] = TLiteral.Create(literalData);
+                literalData[i] = new();
+            }
+            for(int i = 1; i <= cr.LiteralCount; i++){
+                literalData.At(i).AssignLitNum(i);
+                literalData.At(i).SetOther(literalData.At(-i));
+                literalData.At(-i).AssignLitNum(-i);
+                literalData.At(-i).SetOther(literalData.At(i));
             }
             clauseData = new();
             UndecidedVars = new HashSet<int>(Enumerable.Range(1, cr.LiteralCount));
             foreach(var literals in cr.Clauses){
-                AddClause(literals, literalData);
+                AddClause(literals);
             }
         }
         public sealed override void UnitPropagation(){
@@ -150,7 +165,7 @@ namespace Kresat.Representations {
                     continue;
                 }
                 unitPropSteps++;
-                int lit = currClause.GetUnitLiteral();
+                TLiteral lit = currClause.GetUnitLiteral();
                 AssignLiteral(lit);
             }      
         }
