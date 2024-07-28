@@ -184,11 +184,11 @@ namespace Kresat {
             if(ErrorLogger.HadError){
                 return;
             }
-            Stopwatch stopwatch = new Stopwatch();
+            Process currentProcess = Process.GetCurrentProcess();
             DPLLSolver solver = new DPLLSolver(cr, unitProp.Value);
-            stopwatch.Start();
+            var currTime = currentProcess.TotalProcessorTime;
             Verdict verdict = solver.Solve();
-            stopwatch.Stop();
+            var finalTime = currentProcess.TotalProcessorTime;
             if(format == Format.smtlib){
                 WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
             }
@@ -196,7 +196,7 @@ namespace Kresat {
                 WriteFile(outputPath, verdict.ToString() + "\n");
             }
             WriteFile(outputPath, $"# of decisions: {solver.numDecisions}, # of propagated vars: {solver.unitPropSteps}\n");
-            WriteFile(outputPath, $"Elapsed time: {stopwatch.Elapsed}\n\n");
+            WriteFile(outputPath, $"Elapsed time: {(finalTime-currTime).TotalSeconds}\n\n");
         }
 
         private static string? ReadFile(FileInfo? inputPath){
