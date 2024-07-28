@@ -5,6 +5,8 @@ using Kresat.Solvers;
 using Kresat.Representations;
 using System.CommandLine;
 using System.Diagnostics;
+using Kresat.Tests;
+using BenchmarkDotNet.Running;
 
 namespace Kresat {
     internal enum UnitPropType {
@@ -140,11 +142,18 @@ namespace Kresat {
             solveCommand.SetHandler(SolveHandler, formatOption, inputArgument, outputArgument,
                                     useSmtlibOption, useDimacsOption, unitPropagationDSOption);
 
+            var benchmarkCommand = new Command("benchmark", "Run benchmarks");
+            benchmarkCommand.SetHandler(BenchmarkHandler);
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
+            rootCommand.AddCommand(benchmarkCommand);
 
             await rootCommand.InvokeAsync(args);
             return ErrorLogger.HadError ? 1 : 0;
+        }
+
+        private static void BenchmarkHandler(){
+            BenchmarkRunner.Run<UnitPropagationBenchmarks>();
         }
 
         private static void SolveHandler(Format? format, FileInfo? inputPath, FileInfo? outputPath,
