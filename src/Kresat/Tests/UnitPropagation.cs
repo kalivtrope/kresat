@@ -32,6 +32,7 @@ namespace Kresat.Tests {
             Verdict verdict = solver.Solve();
             stopwatch.Stop();
             Program.WriteFileContents("/dev/null", verdict.ToString());
+            //Console.WriteLine($"processed {DatasetFile} {upt} in {stopwatch.Elapsed}");
             return stopwatch.Elapsed;
         }
         public static TimeSpan BenchmarkAdjacencyListWithDPLL(string DatasetFile){
@@ -45,10 +46,11 @@ namespace Kresat.Tests {
             if(rootFolder is null){
                 rootFolder = Path.Combine(Path.GetDirectoryName(WhereAmI()), "../../../datasets");
             }
-            var DatasetFiles = Directory.GetDirectories(rootFolder).SelectMany(GetAllDatasetFiles).Select(
-                path => (Path.GetDirectoryName(path), BenchmarkAdjacencyListWithDPLL(path)));
+            var DatasetFiles = Directory.GetDirectories(rootFolder).SelectMany(GetAllDatasetFiles);
 
-            var AdjacencyListResults = DatasetFiles.
+            var AdjacencyListResults = DatasetFiles
+                                        .Select(
+                path => (Path.GetDirectoryName(path), BenchmarkAdjacencyListWithDPLL(path))).
                 GroupBy(pair => pair.Item1).Select(
                     group => {
                         string datasetName = Path.GetFileName(group.Key);
@@ -57,7 +59,10 @@ namespace Kresat.Tests {
                     }
                 );
  
-            var WatchLiteralsResults = DatasetFiles.GroupBy(
+            var WatchLiteralsResults = DatasetFiles
+            .Select(
+                path => (Path.GetDirectoryName(path), BenchmarkWatchedLiteralsWithDPLL(path)))
+            .GroupBy(
                 pair => pair.Item1
             ).Select(
                 group => {
@@ -69,7 +74,7 @@ namespace Kresat.Tests {
             var results = AdjacencyListResults.Zip(WatchLiteralsResults);
             Console.WriteLine("Dataset \t Adjacency avg (sec) \t Watched avg (sec)");
             foreach(var result in results){
-                Console.WriteLine($"{result.First.DatasetName}\t{string.Format("{0:0.####}", result.First.AverageTime/1000)}\t{string.Format("{0:0.####}", result.Second.AverageTime/1000)}");
+                Console.WriteLine($"{result.First.DatasetName} \t {string.Format("{0:0.####}", result.First.AverageTime/1000)} \t {string.Format("{0:0.####}", result.Second.AverageTime/1000)}");
             }
         }
     }
