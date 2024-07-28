@@ -6,7 +6,6 @@ using Kresat.Representations;
 using System.CommandLine;
 using System.Diagnostics;
 using Kresat.Tests;
-using BenchmarkDotNet.Running;
 
 namespace Kresat {
     internal enum UnitPropType {
@@ -142,8 +141,16 @@ namespace Kresat {
             solveCommand.SetHandler(SolveHandler, formatOption, inputArgument, outputArgument,
                                     useSmtlibOption, useDimacsOption, unitPropagationDSOption);
 
-            var benchmarkCommand = new Command("benchmark", "Run benchmarks");
-            benchmarkCommand.SetHandler(BenchmarkHandler);
+            var datasetLocationArgument = new Argument<string?>(
+                name: "path to datasets",
+                description: "path to the dataset folder"
+            ){
+                Arity = ArgumentArity.ZeroOrOne
+            };
+            var benchmarkCommand = new Command("benchmark", "Run benchmarks"){
+                datasetLocationArgument
+            };
+            benchmarkCommand.SetHandler(BenchmarkHandler, datasetLocationArgument);
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
             rootCommand.AddCommand(benchmarkCommand);
@@ -152,8 +159,8 @@ namespace Kresat {
             return ErrorLogger.HadError ? 1 : 0;
         }
 
-        private static void BenchmarkHandler(){
-            BenchmarkRunner.Run<UnitPropagationBenchmarks>();
+        private static void BenchmarkHandler(string? datasetLocation){
+            UnitPropagationBenchmarks.Run(datasetLocation);
         }
 
         private static void SolveHandler(Format? format, FileInfo? inputPath, FileInfo? outputPath,
