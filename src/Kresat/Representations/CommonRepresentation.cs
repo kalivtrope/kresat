@@ -55,23 +55,26 @@ namespace Kresat.Representations {
         }
         public void AddClause(IEnumerable<int> clause){
             HashSet<int> literals = new();
+            bool redundant = false;
             foreach(var literal in clause){
                 if(literal == 0){
                     ErrorLogger.Report(0, "Cannot have a 0 literal in clause");
                 }
                 if(literals.Contains(-literal)){
-                    ErrorLogger.Report(0, $"Cannot have both {literal} and {-literal} in the same clause");
+                    ErrorLogger.ReportWarning($"Cannot have both {literal} and {-literal} in the same clause");
+                    redundant = true;
                 }
                 vars.Add(Math.Abs(literal));
                 literals.Add(literal);
             }
-            clauses.Add(clause.ToList());
+            if(!redundant){
+                clauses.Add(clause.ToList());
+            }
         }
-
 
         public void CheckEquals(int expected, int actual, string what){
             if(expected != actual){
-                ErrorLogger.Report(0, $"Wrong {what}: expected {expected}, got {actual}");
+                ErrorLogger.ReportWarning($"Wrong {what}: expected {expected}, got {actual}");
             }
         }
         public CommonRepresentation Build(){
