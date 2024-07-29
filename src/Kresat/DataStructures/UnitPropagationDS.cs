@@ -129,14 +129,15 @@ namespace Kresat.Representations {
             UndecidedVars.Remove(Math.Abs(literal.LitNum));
             literal.Satisfy();
             literal.Opposite.Falsify();
-            foreach(TClause clause in literal.Opposite.GetClauses()){
-                if(clause.IsSatisfied()){
+            var clauses = literal.Opposite.GetClauses();
+            for(int i = 0; i < clauses.Count; i++){
+                if(clauses[i].IsSatisfied()){
                     continue;
                 }
-                if(clause.IsUnit()){
-                    unitClauses.Push(clause);
+                if(clauses[i].IsUnit()){
+                    unitClauses.Push((TClause)clauses[i]);
                 }
-                if(clause.IsFalsified()){
+                if(clauses[i].IsFalsified()){
                     HasContradiction = true;
                 }
             }
