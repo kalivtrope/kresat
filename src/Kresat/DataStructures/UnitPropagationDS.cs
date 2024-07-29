@@ -15,6 +15,7 @@ namespace Kresat.Representations {
         public List<TLiteral> Literals {get;}
         bool IsUnit();
         bool IsFalsified();
+        bool IsSatisfied();
         TLiteral GetUnitLiteral();
     }
     interface ILiteral<TLiteral> where TLiteral : ILiteral<TLiteral> {
@@ -30,7 +31,7 @@ namespace Kresat.Representations {
         void Satisfy();
         void Falsify();
         void Unsatisfy();
-        IEnumerable<IClause<TLiteral>> GetClauses();
+        IReadOnlyList<IClause<TLiteral>> GetClauses();
     }
     internal static class ListExtensions {
         public static void Swap<T>(this IList<T> list, int idx1, int idx2){
@@ -129,6 +130,9 @@ namespace Kresat.Representations {
             literal.Satisfy();
             literal.Opposite.Falsify();
             foreach(TClause clause in literal.Opposite.GetClauses()){
+                if(clause.IsSatisfied()){
+                    continue;
+                }
                 if(clause.IsUnit()){
                     unitClauses.Push(clause);
                 }

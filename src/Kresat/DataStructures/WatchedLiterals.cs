@@ -111,12 +111,8 @@ namespace Kresat.Representations {
       public void Satisfy(){
         Value = Valuation.SATISFIED;
       }
-      public IEnumerable<IClause<WatchLiteral>> GetClauses(){
-        foreach(var clause in ClausesWithWatch){
-          if(!clause.IsSatisfied()){
-            yield return clause;
-          }
-        }
+      public IReadOnlyList<IClause<WatchLiteral>> GetClauses(){
+        return ClausesWithWatch;
       }
       public void Falsify(){
         Value = Valuation.FALSIFIED;

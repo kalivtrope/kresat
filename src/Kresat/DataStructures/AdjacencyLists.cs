@@ -79,7 +79,7 @@ namespace Kresat.Representations {
             clause.FalsifyLiteral();
           }
         }
-        public IEnumerable<IClause<AdjacencyListLiteral>> GetClauses(){
+        public IReadOnlyList<IClause<AdjacencyListLiteral>> GetClauses(){
             return Clauses;
         }
         public void Satisfy(){
