@@ -6,6 +6,7 @@ using Kresat.Representations;
 using System.CommandLine;
 using System.Diagnostics;
 using Kresat.Tests;
+using Kresat.Verifiers;
 
 namespace Kresat {
     internal enum UnitPropType {
@@ -205,6 +206,9 @@ namespace Kresat {
             var currTime = currentProcess.TotalProcessorTime;
             Verdict verdict = solver.Solve();
             var finalTime = currentProcess.TotalProcessorTime;
+            if(!Verifier.Verify(cr, verdict)){
+                throw new Exception($"invalid model {verdict.Model}");
+            }
             if(format == Format.smtlib){
                 WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
             }
