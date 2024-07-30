@@ -201,11 +201,11 @@ namespace Kresat {
             if(ErrorLogger.HadError){
                 return;
             }
-            Process currentProcess = Process.GetCurrentProcess();
             DPLLSolver solver = new DPLLSolver(cr, unitProp.Value);
-            var currTime = currentProcess.TotalProcessorTime;
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
             Verdict verdict = solver.Solve();
-            var finalTime = currentProcess.TotalProcessorTime;
+            stopwatch.Stop();
             if(!Verifier.Verify(cr, verdict)){
                 throw new Exception($"invalid model {verdict.Model}");
             }
@@ -216,7 +216,7 @@ namespace Kresat {
                 WriteFile(outputPath, verdict.ToString() + "\n");
             }
             WriteFile(outputPath, $"# of decisions: {solver.numDecisions}, # of propagated vars: {solver.unitPropSteps}\n");
-            WriteFile(outputPath, $"Elapsed time: {(finalTime-currTime).TotalSeconds}\n\n");
+            WriteFile(outputPath, $"Elapsed time: {stopwatch.Elapsed.TotalSeconds}\n\n");
         }
 
         private static string? ReadFile(FileInfo? inputPath){
