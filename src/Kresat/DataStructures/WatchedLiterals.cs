@@ -1,12 +1,3 @@
-/*
-- two references associated with each clause C
-- list of watch occurrences for each literal
-- watch references are not ordered
-  - move independently around the clause
-- satisfied clauses detected lazily as in H/T lists
-
-*/
-
 namespace Kresat.Representations {
     internal class WatchClause : IClause<WatchLiteral>,
                                  ICreateFromLiterals<WatchClause, WatchLiteral> {
@@ -103,12 +94,15 @@ namespace Kresat.Representations {
     }
 
 
-  internal sealed class WatchLiteral : ILiteral<WatchLiteral> {
+  internal sealed class WatchLiteral : ILiteral<WatchLiteral>, ILearning<WatchClause> {
       public List<WatchClause> ClausesWithWatch = new();
       public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
       public int LitNum {get;set;}
       public WatchLiteral Opposite { get; set; }
-      public void Satisfy(){
+      public WatchClause? Antecedent { get; set; }
+      public int DecisionLevel { get; set; }
+
+        public void Satisfy(){
         Value = Valuation.SATISFIED;
       }
       public IReadOnlyList<IClause<WatchLiteral>> GetClauses(){
@@ -134,5 +128,10 @@ namespace Kresat.Representations {
     internal class WatchedLiterals : UnitPropagationDS<WatchLiteral, WatchClause>
     {
         public WatchedLiterals(CommonRepresentation cr) : base(cr){}
+    }
+
+    internal class WatchedLiteralsWithLearning : UnitPropagationDSWithLearning<WatchLiteral, WatchClause>
+    {
+        public WatchedLiteralsWithLearning(CommonRepresentation cr) : base(cr){}
     }
 }

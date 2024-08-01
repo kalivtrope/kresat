@@ -27,6 +27,12 @@ namespace Kresat.Representations {
         Literals = _literals;
         numLiterals = _literals.Count;
         foreach(var literal in _literals){
+          if(literal.Value == Valuation.FALSIFIED){
+            numFalsifiedLiterals++;
+          }
+          else if(literal.Value == Valuation.SATISFIED){
+            numSatisfiedLiterals++;
+          }
           literal.AddClause(this);
         }
       }
@@ -68,11 +74,14 @@ namespace Kresat.Representations {
         }
     }
 
-    internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral> {
+    internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral>, ILearning<AdjacencyListClause> {
         public Valuation Value {get; private set;} = Valuation.UNSATISFIED;
         public List<AdjacencyListClause> Clauses {get; private set;} = new();
         public AdjacencyListLiteral Opposite { get; set; }
         public int LitNum { get; set; }
+        public AdjacencyListClause? Antecedent { get; set; }
+        public int DecisionLevel { get; set; }
+
         public void Falsify(){
           Value = Valuation.FALSIFIED;
           foreach(var clause in Clauses){
@@ -103,8 +112,10 @@ namespace Kresat.Representations {
             Clauses.Add(clause);
         }
     }
-    class AdjacencyLists : UnitPropagationDS<AdjacencyListLiteral, AdjacencyListClause> {
-
-    public AdjacencyLists(CommonRepresentation cr) : base(cr){}
-  }
+    internal class AdjacencyLists : UnitPropagationDS<AdjacencyListLiteral, AdjacencyListClause> {
+      public AdjacencyLists(CommonRepresentation cr) : base(cr){}
+    }
+    internal class AdjacencyListsWithLearning : UnitPropagationDSWithLearning<AdjacencyListLiteral, AdjacencyListClause> {
+      public AdjacencyListsWithLearning(CommonRepresentation cr) : base(cr){}
+    }
 }

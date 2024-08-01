@@ -201,7 +201,7 @@ namespace Kresat {
             if(ErrorLogger.HadError){
                 return;
             }
-            DPLLSolver solver = new DPLLSolver(cr, unitProp.Value);
+            CDCLSolver solver = new CDCLSolver(cr, unitProp.Value);
             Stopwatch stopwatch = new();
             stopwatch.Start();
             Verdict verdict = solver.Solve();
@@ -253,9 +253,6 @@ namespace Kresat {
             }
             if(!ErrorLogger.HadError){
                 SmtLibScanner scanner = new(inputData!);
-                /*foreach(var token in scanner.ScanTokens()){
-                    outputData += $"{token} ";
-                }*/
                 SmtLibParser parser = new(scanner.ScanTokens(), useEquivalences.Value);
                 WriteFile(outputPath, parser.ToCommonRepresentation().ToString());
             }
