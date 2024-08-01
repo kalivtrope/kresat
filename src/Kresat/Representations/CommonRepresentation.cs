@@ -53,19 +53,25 @@ namespace Kresat.Representations {
             }
             currClause!.Add(lit);
         }
-        public void AddClause(IEnumerable<int> clause){
+        public void AddClause(IList<int> clause){
             HashSet<int> literals = new();
             bool redundant = false;
-            foreach(var literal in clause){
-                if(literal == 0){
+            for(int litIdx = 0; litIdx < clause.Count; litIdx++){
+                int litNum = clause[litIdx];
+                if(litNum == 0){
                     ErrorLogger.Report(0, "Cannot have a 0 literal in clause");
                 }
-                if(literals.Contains(-literal)){
-                    ErrorLogger.ReportWarning($"Cannot have both {literal} and {-literal} in the same clause");
+                if(literals.Contains(-litNum)){
+                    ErrorLogger.ReportWarning($"Cannot have both {litNum} and {-litNum} in the same clause");
                     redundant = true;
                 }
-                vars.Add(Math.Abs(literal));
-                literals.Add(literal);
+                if(literals.Contains(litNum)){
+                    clause.RemoveInPlace(litIdx);
+                    litIdx--;
+                    ErrorLogger.ReportWarning($"Duplicit literal: {litNum}");
+                }
+                vars.Add(Math.Abs(litNum));
+                literals.Add(litNum);
             }
             if(!redundant){
                 clauses.Add(clause.ToList());
