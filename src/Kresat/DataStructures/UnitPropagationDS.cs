@@ -82,7 +82,10 @@ namespace Kresat.Representations {
                                                         where TLiteral : ILiteral<TLiteral>, ILearning<TClause>, new()
                                                         where TClause : class, IClause<TLiteral>, ICreateFromLiterals<TClause, TLiteral>
     {
-        protected UnitPropagationDSWithLearning(CommonRepresentation cr) : base(cr){}
+        protected UnitPropagationDSWithLearning(CommonRepresentation cr) : base(cr){
+            used = new bool[cr.LiteralCount+1];
+        }
+        bool[] used;
         List<TClause> learnedClauses = new();
         TClause? conflict;
         List<TLiteral>? clauseToBeLearned;
@@ -90,11 +93,10 @@ namespace Kresat.Representations {
             if(currDecisionLevel == 0) return -1;
 
             int numLiteralsAtCurrDecisionLevel = 0;
-            HashSet<int> used = [];
             List<TLiteral> result = new();
             int assertionLevel = 0;
             for(int j = 0; j < conflict!.Literals!.Count; j++){
-                used.Add(Math.Abs(conflict!.Literals[j].LitNum));
+                used[Math.Abs(conflict!.Literals[j].LitNum)] = true;
                 // In a conflict, all of the literals are falsified.
                 // Since we only record the satisfied literals, we need
                 // to actually observe the decision levels of the opposite
@@ -111,11 +113,12 @@ namespace Kresat.Representations {
             }
             for(int i = decisions.Count-1; i >= 0; i--){
                 TLiteral currLit = decisions[i].Literal;
-                if(!used.Contains(Math.Abs(currLit.LitNum))){
+                if(!used[Math.Abs(currLit.LitNum)]){
                     continue;
                 }
+                //used[Math.Abs(currLit.LitNum)] = false;
                 if(currLit.DecisionLevel < currDecisionLevel){
-                    throw new Exception("shouldn't have happened");
+                    throw new Exception("shouldn't have gone beyond current decision level");
                 }
                 if(currLit.DecisionLevel == currDecisionLevel){
                     if(numLiteralsAtCurrDecisionLevel == 1){
@@ -129,8 +132,8 @@ namespace Kresat.Representations {
                         // (represented by the used HashSet)
                         TLiteral nextLit = currLit.Antecedent.Literals[j];
                         int litNum = Math.Abs(nextLit.LitNum);
-                        if(!used.Contains(litNum)){
-                            used.Add(litNum);
+                        if(!used[litNum]){
+                            used[litNum] = true;
                             if(nextLit.Opposite.DecisionLevel == currDecisionLevel){
                                 numLiteralsAtCurrDecisionLevel++;
                             }
@@ -143,6 +146,7 @@ namespace Kresat.Representations {
                 }
             }
             clauseToBeLearned = result;
+            Array.Clear(used);
             if(assertionLevel >= currDecisionLevel){
                 throw new Exception("achj");
             }
