@@ -13,6 +13,7 @@ namespace Kresat.Representations {
     }
     interface IClause<TLiteral> where TLiteral : ILiteral<TLiteral> {
         public List<TLiteral> Literals {get;}
+        public bool IsLearned {get;set;}
         bool IsUnit();
         bool IsFalsified();
         bool IsSatisfied();
@@ -36,6 +37,7 @@ namespace Kresat.Representations {
     interface ILearning<TClause> where TClause : class {
         TClause? Antecedent {get;set;}
         int DecisionLevel {get;set;}
+        public void PurgeLearnedClauses();
     }
     internal static class ListExtensions {
         public static void Swap<T>(this IList<T> list, int idx1, int idx2){
@@ -61,22 +63,23 @@ namespace Kresat.Representations {
         public int unitPropSteps {get;}
 
         protected HashSet<int> UndecidedVars {get;}
-        public abstract void Backtrack(int decisionLevel);
-        public abstract void DecideLiteral(int literal);
+        public void Backtrack(int decisionLevel);
+        public void DecideLiteral(int literal);
         internal int ChooseDecisionLiteral(){
             return UndecidedVars.First();
         }
         public void UndoLastLiteral(){
             Backtrack(currDecisionLevel-1);
         }
-        public abstract bool AllVariablesAssigned();
-        public abstract void UnitPropagation();
-        public abstract List<int> ConstructModel();
+        public bool AllVariablesAssigned();
+        public void UnitPropagation();
+        public List<int> ConstructModel();
     }
 
     interface IUnitPropagationDSWithLearning : IUnitPropagationDS {
         public int LearnAssertiveClause();
         public void AddLearnedClause();
+        public void Restart();
     }
     abstract class UnitPropagationDSWithLearning<TLiteral, TClause> : UnitPropagationDS<TLiteral, TClause>, IUnitPropagationDSWithLearning
                                                         where TLiteral : ILiteral<TLiteral>, ILearning<TClause>, new()
@@ -89,12 +92,28 @@ namespace Kresat.Representations {
         List<TClause> learnedClauses = new();
         TClause? conflict;
         List<TLiteral>? clauseToBeLearned;
+        public void Restart(){
+            conflict = null;
+            HasContradiction = false;
+            unitClauses.Clear();
+            for(int i = 0; i < literalData.Count; i++){
+                RestartLiteral(literalData[i]);
+            }
+            decisions.Clear();
+            currDecisionLevel = 0;
+            learnedClauses.Clear();
+        }
+        void RestartLiteral(TLiteral literal){
+            literal.PurgeLearnedClauses();
+            UndoLiteral(literal);
+        }
         public int LearnAssertiveClause(){
             if(currDecisionLevel == 0) return -1;
 
             int numLiteralsAtCurrDecisionLevel = 0;
             List<TLiteral> result = new();
             int assertionLevel = 0;
+            //Console.WriteLine($"starting with {used.Contains(true)}");
             for(int j = 0; j < conflict!.Literals!.Count; j++){
                 used[Math.Abs(conflict!.Literals[j].LitNum)] = true;
                 // In a conflict, all of the literals are falsified.
@@ -147,14 +166,12 @@ namespace Kresat.Representations {
             }
             clauseToBeLearned = result;
             Array.Clear(used);
-            if(assertionLevel >= currDecisionLevel){
-                throw new Exception("achj");
-            }
             return assertionLevel;
         }
         public void AddLearnedClause(){
-            TClause clause = AddClause(clauseToBeLearned!);
+            TClause clause = AddClause(clauseToBeLearned!, addToClauseData: false);
             learnedClauses.Add(clause);
+            clause.IsLearned = true;
         }
 
         protected sealed override void RegisterDecision(TLiteral literal, TClause? antecedent){
@@ -169,14 +186,14 @@ namespace Kresat.Representations {
     }
     abstract class UnitPropagationDS<TLiteral, TClause> : IUnitPropagationDS where TLiteral : ILiteral<TLiteral>, new()
                                                         where TClause : class, IClause<TLiteral>, ICreateFromLiterals<TClause, TLiteral> {
-        List<TLiteral> literalData;
+        protected List<TLiteral> literalData;
         protected List<TClause> clauseData;
         protected Stack<TClause> unitClauses = new();
         protected List<Decision<TLiteral>> decisions = new();
 
         public bool HasContradiction {get;protected set;} = false;
 
-        public int currDecisionLevel {get;private set;} = 0;
+        public int currDecisionLevel {get;protected set;} = 0;
 
         public int unitPropSteps {get;private set;} = 0;
         public HashSet<int> UndecidedVars {get; private set;} = new();
@@ -199,13 +216,14 @@ namespace Kresat.Representations {
             currDecisionLevel = decisionLevel;
         }
 
-        private void UndoLiteral(TLiteral literal){
+        protected void UndoLiteral(TLiteral literal){
             UndecidedVars.Add(Math.Abs(literal.LitNum));
             literal.Unsatisfy();
             literal.Opposite.Unsatisfy();
         }
         public void DecideLiteral(int literal){
             currDecisionLevel++;
+            //Console.WriteLine($"deciding {literal}@{currDecisionLevel}");
             AssignLiteral(literalData.At(literal), null);
         }
 
@@ -219,9 +237,11 @@ namespace Kresat.Representations {
             }
             return res;
         }
-        protected TClause AddClause(List<TLiteral> literals){
+        protected TClause AddClause(List<TLiteral> literals, bool addToClauseData=true){
             TClause clause = TClause.Create(literals);
-            clauseData.Add(clause);
+            if(addToClauseData){
+                clauseData.Add(clause);
+            }
             if(clause.IsUnit()){
                 unitClauses.Push(clause);
             }

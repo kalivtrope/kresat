@@ -2,7 +2,10 @@ namespace Kresat.Representations {
     internal class WatchClause : IClause<WatchLiteral>,
                                  ICreateFromLiterals<WatchClause, WatchLiteral> {
       public List<WatchLiteral> Literals {get;set;}
-      public static WatchClause Create(List<WatchLiteral> _literals){
+
+      public bool IsLearned {get;set;}
+
+        public static WatchClause Create(List<WatchLiteral> _literals){
         return new WatchClause(_literals);
       }
       public WatchClause(List<WatchLiteral> _literals){
@@ -123,6 +126,14 @@ namespace Kresat.Representations {
       }
       public void Unsatisfy(){
         Value = Valuation.UNSATISFIED;
+      }
+
+      public void PurgeLearnedClauses(){
+        for(int i = 0; i < ClausesWithWatch.Count; i++){
+          if(ClausesWithWatch[i].IsLearned){
+            ClausesWithWatch.RemoveInPlace(i);
+          }
+        }
       }
     }
     internal class WatchedLiterals : UnitPropagationDS<WatchLiteral, WatchClause>

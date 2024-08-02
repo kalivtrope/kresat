@@ -5,6 +5,7 @@ namespace Kresat.Solvers {
     class CDCLSolver {
         public int numDecisions {get;private set;} = 0;
         public int unitPropSteps {get => upds.unitPropSteps;}
+        int numConflicts = 0;
         IUnitPropagationDSWithLearning upds;
         CommonRepresentation cr;
         public CDCLSolver(CommonRepresentation cr, UnitPropType unitProp){
@@ -20,13 +21,19 @@ namespace Kresat.Solvers {
             while(true){
                 upds.UnitPropagation();
                 while(upds.HasContradiction){
-                    int level = upds.LearnAssertiveClause(); 
-                    if(level < 0){
-                        return new Verdict {Satisfiable = false};
+                    numConflicts++;
+                    if(TimeToRestart()){
+                        upds.Restart();
                     }
-                    upds.Backtrack(level);
-                    upds.AddLearnedClause();
-                    upds.UnitPropagation();
+                    else{
+                        int level = upds.LearnAssertiveClause(); 
+                        if(level < 0){
+                            return new Verdict {Satisfiable = false};
+                        }
+                        upds.Backtrack(level);
+                        upds.AddLearnedClause();
+                        upds.UnitPropagation();
+                    }
                 }
                 if(upds.AllVariablesAssigned()){
                     return new Verdict {Satisfiable = true, Model = upds.ConstructModel()};
@@ -35,6 +42,11 @@ namespace Kresat.Solvers {
                 int lit = upds.ChooseDecisionLiteral();
                 upds.DecideLiteral(lit);
             }
+        }
+
+        private bool TimeToRestart()
+        {
+            throw new NotImplementedException();
         }
     }
 }
