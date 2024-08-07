@@ -1,11 +1,8 @@
 namespace Kresat.Representations {
-    internal class WatchClause : IClause<WatchLiteral>,
+    internal class WatchClause : IClause<WatchLiteral>, IPurgeable,
                                  ICreateFromLiterals<WatchClause, WatchLiteral> {
       public List<WatchLiteral> Literals {get;set;}
-
-      public bool IsLearned {get;set;}
-
-        public static WatchClause Create(List<WatchLiteral> _literals){
+      public static WatchClause Create(List<WatchLiteral> _literals){
         return new WatchClause(_literals);
       }
       public WatchClause(List<WatchLiteral> _literals){
@@ -94,8 +91,20 @@ namespace Kresat.Representations {
           return Literals[1];
         }
       }
+      void PurgeLiteral(int litIdx){
+        for(int i = 0; i < Literals[litIdx].ClausesWithWatch.Count; i++){
+          if(ReferenceEquals(this, Literals[litIdx].ClausesWithWatch[i])){
+            Literals[litIdx].ClausesWithWatch.RemoveInPlace(i);
+            break;
+          }
+        }
+      }
+      public void PurgeSelf(){
+        if(Literals.Count <= 1) return;
+        PurgeLiteral(0);
+        PurgeLiteral(1);
+      }
     }
-
 
   internal sealed class WatchLiteral : ILiteral<WatchLiteral>, ILearning<WatchClause> {
       public List<WatchClause> ClausesWithWatch = new();
@@ -126,14 +135,6 @@ namespace Kresat.Representations {
       }
       public void Unsatisfy(){
         Value = Valuation.UNSATISFIED;
-      }
-
-      public void PurgeLearnedClauses(){
-        for(int i = 0; i < ClausesWithWatch.Count; i++){
-          if(ClausesWithWatch[i].IsLearned){
-            ClausesWithWatch.RemoveInPlace(i);
-          }
-        }
       }
     }
     internal class WatchedLiterals : UnitPropagationDS<WatchLiteral, WatchClause>

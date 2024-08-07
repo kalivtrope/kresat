@@ -13,7 +13,6 @@ namespace Kresat.Representations {
     }
     interface IClause<TLiteral> where TLiteral : ILiteral<TLiteral> {
         public List<TLiteral> Literals {get;}
-        public bool IsLearned {get;set;}
         bool IsUnit();
         bool IsFalsified();
         bool IsSatisfied();
@@ -37,7 +36,6 @@ namespace Kresat.Representations {
     interface ILearning<TClause> where TClause : class {
         TClause? Antecedent {get;set;}
         int DecisionLevel {get;set;}
-        public void PurgeLearnedClauses();
     }
     internal static class ListExtensions {
         public static void Swap<T>(this IList<T> list, int idx1, int idx2){
@@ -56,6 +54,9 @@ namespace Kresat.Representations {
             }
             return list[2*(lit - 1) + 1];
         }
+    }
+    interface IPurgeable {
+        void PurgeSelf();
     }
     interface IUnitPropagationDS {
         public bool HasContradiction {get;}
@@ -83,23 +84,46 @@ namespace Kresat.Representations {
     }
     abstract class UnitPropagationDSWithLearning<TLiteral, TClause> : UnitPropagationDS<TLiteral, TClause>, IUnitPropagationDSWithLearning
                                                         where TLiteral : ILiteral<TLiteral>, ILearning<TClause>, new()
-                                                        where TClause : class, IClause<TLiteral>, ICreateFromLiterals<TClause, TLiteral>
+                                                        where TClause : class, IClause<TLiteral>, IPurgeable, ICreateFromLiterals<TClause, TLiteral>
     {
         protected UnitPropagationDSWithLearning(CommonRepresentation cr) : base(cr){
             used = new bool[cr.LiteralCount+1];
         }
         bool[] used;
-        List<TClause> learnedClauses = new();
         TClause? conflict;
         List<TLiteral>? clauseToBeLearned;
+        class Cache {
+            record class TLearnedClause {
+                public TClause Clause {get;init;}
+                public int LBD {get;init;}
+            }
+            double multiplier = 1.5;
+            long currMaxSize = 10000;
+            List<TLearnedClause> learnedClauses = new();
+            public void Add(TClause clause){
+                if(learnedClauses.Count >= currMaxSize){
+                    learnedClauses.Sort((a,b) => a.LBD.CompareTo(b.LBD));
+                    while(learnedClauses.Count * 2 > currMaxSize){
+                        TClause clauseToBeRemoved = learnedClauses[^1].Clause;
+                        clauseToBeRemoved.PurgeSelf();
+                        learnedClauses.RemoveAt(learnedClauses.Count-1);
+                    }
+                    currMaxSize = (int)(currMaxSize * multiplier);
+                }
+                int LBD = CalculateLBD(clause);
+                learnedClauses.Add(new TLearnedClause{ Clause = clause, LBD = LBD });
+            }
+            int CalculateLBD(TClause clause){
+                HashSet<int> levels = new();
+                for(int i = 0; i < clause.Literals.Count; i++){
+                    levels.Add(clause.Literals[i].DecisionLevel);
+                }
+                return levels.Count;
+            }
+        }
+        Cache cache = new();
         public void Restart(){
             Backtrack(0);
-        }
-        void PurgeLearnedClauses(){
-            for(int i = 0; i < literalData.Count; i++){
-                literalData[i].PurgeLearnedClauses();
-            }
-            learnedClauses.Clear();
         }
         public int LearnAssertiveClause(){
             if(currDecisionLevel == 0) return -1;
@@ -164,8 +188,7 @@ namespace Kresat.Representations {
         }
         public void AddLearnedClause(){
             TClause clause = AddClause(clauseToBeLearned!, addToClauseData: false);
-            learnedClauses.Add(clause);
-            clause.IsLearned = true;
+            cache.Add(clause);
         }
 
         protected sealed override void RegisterDecision(TLiteral literal, TClause? antecedent){

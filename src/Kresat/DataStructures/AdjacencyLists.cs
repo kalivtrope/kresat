@@ -1,6 +1,6 @@
 using Kresat.Loggers;
 namespace Kresat.Representations {
-    internal class AdjacencyListClause : IClause<AdjacencyListLiteral>,
+    internal class AdjacencyListClause : IClause<AdjacencyListLiteral>, IPurgeable,
                    ICreateFromLiterals<AdjacencyListClause, AdjacencyListLiteral>{
     /*
     We use a counter-based approach to Adjacency lists
@@ -14,9 +14,6 @@ namespace Kresat.Representations {
       that contain \not l_i.
     */
       public List<AdjacencyListLiteral> Literals { get; set; }
-
-      public bool IsLearned {get;set;}
-
         void CheckNonnegative(int val, string name){
         if (val < 0){
           ErrorLogger.Report(0, $"{name} became negative which should be impossible");
@@ -75,6 +72,8 @@ namespace Kresat.Representations {
         {
             return new(_literals);
         }
+
+        public void PurgeSelf(){}
     }
 
     internal sealed class AdjacencyListLiteral : ILiteral<AdjacencyListLiteral>, ILearning<AdjacencyListClause> {
@@ -94,13 +93,6 @@ namespace Kresat.Representations {
         public IReadOnlyList<IClause<AdjacencyListLiteral>> GetClauses(){
             return Clauses;
         }
-
-        public void PurgeLearnedClauses(){
-          while(Clauses.Count > 0 && Clauses[^1].IsLearned){
-            Clauses.RemoveAt(Clauses.Count-1);
-          }
-        }
-
         public void Satisfy(){
           Value = Valuation.SATISFIED;
             foreach(var clause in Clauses){
