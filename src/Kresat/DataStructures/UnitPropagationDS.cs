@@ -93,19 +93,13 @@ namespace Kresat.Representations {
         TClause? conflict;
         List<TLiteral>? clauseToBeLearned;
         public void Restart(){
-            conflict = null;
-            HasContradiction = false;
-            unitClauses.Clear();
-            for(int i = 0; i < literalData.Count; i++){
-                RestartLiteral(literalData[i]);
-            }
-            decisions.Clear();
-            currDecisionLevel = 0;
-            learnedClauses.Clear();
+            Backtrack(0);
         }
-        void RestartLiteral(TLiteral literal){
-            literal.PurgeLearnedClauses();
-            UndoLiteral(literal);
+        void PurgeLearnedClauses(){
+            for(int i = 0; i < literalData.Count; i++){
+                literalData[i].PurgeLearnedClauses();
+            }
+            learnedClauses.Clear();
         }
         public int LearnAssertiveClause(){
             if(currDecisionLevel == 0) return -1;
@@ -223,7 +217,6 @@ namespace Kresat.Representations {
         }
         public void DecideLiteral(int literal){
             currDecisionLevel++;
-            //Console.WriteLine($"deciding {literal}@{currDecisionLevel}");
             AssignLiteral(literalData.At(literal), null);
         }
 
@@ -306,7 +299,7 @@ namespace Kresat.Representations {
                 unitPropSteps++;
                 TLiteral lit = currClause.GetUnitLiteral();
                 AssignLiteral(lit, currClause);
-            }      
+            }
         }
     }   
 }

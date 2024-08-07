@@ -5,9 +5,12 @@ namespace Kresat.Solvers {
     class CDCLSolver {
         public int numDecisions {get;private set;} = 0;
         public int unitPropSteps {get => upds.unitPropSteps;}
+        public int numRestarts {get; private set;} = 0;
+        public int totalNumConflicts {get; private set;} = 0;
         int numConflicts = 0;
         IUnitPropagationDSWithLearning upds;
         CommonRepresentation cr;
+        LubyGenerator lubyGenerator = new();
         public CDCLSolver(CommonRepresentation cr, UnitPropType unitProp){
             this.cr = cr;
             if(unitProp == UnitPropType.adjacency){
@@ -21,15 +24,17 @@ namespace Kresat.Solvers {
             while(true){
                 upds.UnitPropagation();
                 while(upds.HasContradiction){
-                    numConflicts++;
-                    if(TimeToRestart()){
+                    totalNumConflicts++;
+                    int level = upds.LearnAssertiveClause(); 
+                    if(level < 0){
+                        return new Verdict {Satisfiable = false};
+                    }
+                    if(lubyGenerator.TimeToRestart(numConflicts++)){
+                        numConflicts = 0;
+                        numRestarts++;
                         upds.Restart();
                     }
-                    else{
-                        int level = upds.LearnAssertiveClause(); 
-                        if(level < 0){
-                            return new Verdict {Satisfiable = false};
-                        }
+                    else {
                         upds.Backtrack(level);
                         upds.AddLearnedClause();
                         upds.UnitPropagation();
@@ -43,10 +48,25 @@ namespace Kresat.Solvers {
                 upds.DecideLiteral(lit);
             }
         }
-
-        private bool TimeToRestart()
-        {
-            throw new NotImplementedException();
+        class LubyGenerator {
+            // see https://oeis.org/A182105 on details about why this works
+            long u = 1, v = 1;
+            public bool TimeToRestart(int numConflicts){
+                if(numConflicts >= v){
+                    Advance();
+                    return true;
+                }
+                return false;
+            }
+            void Advance(){
+                if((u & (-u)) == v){
+                    u++;
+                    v = 1;
+                }
+                else{
+                    v <<= 1;
+                }
+            }
         }
     }
 }

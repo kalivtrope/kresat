@@ -207,7 +207,7 @@ namespace Kresat {
             Verdict verdict = solver.Solve();
             stopwatch.Stop();
             if(!Verifier.Verify(cr, verdict)){
-                throw new Exception($"invalid model {verdict.Model}");
+                throw new Exception($"invalid model {string.Join(' ', verdict.Model)}");
             }
             if(format == Format.smtlib){
                 WriteFile(outputPath, verdict.ToString(cr.OriginalMapping!) + "\n");
@@ -215,7 +215,7 @@ namespace Kresat {
             else{
                 WriteFile(outputPath, verdict.ToString() + "\n");
             }
-            WriteFile(outputPath, $"# of decisions: {solver.numDecisions}, # of propagated vars: {solver.unitPropSteps}\n");
+            WriteFile(outputPath, $"# of decisions: {solver.numDecisions}, # of propagated vars: {solver.unitPropSteps}, # of conflicts: {solver.totalNumConflicts}, # of restarts: {solver.numRestarts}\n");
             WriteFile(outputPath, $"Elapsed time: {stopwatch.Elapsed.TotalSeconds}\n\n");
         }
 

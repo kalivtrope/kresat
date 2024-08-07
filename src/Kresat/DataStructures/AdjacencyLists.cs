@@ -108,6 +108,9 @@ namespace Kresat.Representations {
             }
         }
         public void Unsatisfy(){
+          if(Value == Valuation.UNSATISFIED){
+            return;
+          }
           foreach(var clause in Clauses){
             if(Value == Valuation.FALSIFIED){
               clause.UnfalsifyLiteral();
