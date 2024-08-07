@@ -51,8 +51,9 @@ namespace Kresat.Solvers {
         class LubyGenerator {
             // see https://oeis.org/A182105 on details about why this works
             long u = 1, v = 1;
+            long unit_run = 100;
             public bool TimeToRestart(int numConflicts){
-                if(numConflicts >= v){
+                if(numConflicts >= unit_run * v){
                     Advance();
                     return true;
                 }
