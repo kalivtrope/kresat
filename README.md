@@ -2,14 +2,15 @@
 
 KreSAT is a simple CDCL Solver written in C#.
 It has the following features:
-- the watched literals data structure
+
+- watched literals
 - clause learning via 1-UIP
 - clause deletion via LBD
 - restarts based on the Luby sequence
 
 ## Dependencies
 - [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-- [System.Commandline](https://www.nuget.org/packages/System.CommandLine) library (installed automatically upon building the project)
+- [System.Commandline](https://www.nuget.org/packages/System.CommandLine) library (installed automatically while building the project)
 
 ## Building the project
 You may build the project by running the following command in the root of this repository: 
@@ -22,7 +23,26 @@ You may then execute the resulting binary as `bin/Kresat`.
 The program has three main commands: `tseitin`, `solve` and `benchmark`.
 ### Tseitin encoding
 The `tseitin` command implements the features described in [the first task](https://ktiml.mff.cuni.cz/~kucerap/satsmt/practical/task_tseitin.php).
-Usage:
+
+#### Example input
+`(or (not x0) (and x0 (and x1 (not x1))))`
+#### Example output
+```
+c 1 = x0
+c 2 = x1
+c 3 = _0 ≡ -x0 OR _1 (root)
+c 4 = _1 ≡ x0 AND _2
+c 5 = _2 ≡ x1 AND -x1
+p cnf 5 6
+-5 2 0
+-5 -2 0
+-4 1 0
+-4 5 0
+-3 -1 4 0
+3 0
+```
+
+For more details see help:
 ```
 % bin/Kresat tseitin -h
 Description:
@@ -50,7 +70,35 @@ bin/Kresat solve input.cnf
 which solves the file `input.cnf` with CDCL on watched literals.
 
 You may also configure the program to solve a file with a plain DPLL strategy or with adjacency lists.
-There are also three extra parameters effective on CDCL: the Luby unit run constant (for clause restarts), initial cache size and cache size multiplier (for clause deletion).
+There are also three extra parameters effective on CDCL: the Luby unit run constant (for clause restarts),
+initial cache size and cache size multiplier (for clause deletion).
+
+#### Example input (dimacs, `-a dpll`)
+```
+p cnf 5 6
+-5 2 0
+-5 -2 0
+-4 1 0
+-4 5 0
+-3 -1 4 0
+3 0
+```
+#### Example output (dimacs, `-a dpll`)
+```
+SAT -1 2 3 -4 -5
+# of decisions: 2, # of propagated vars: 6
+Elapsed time: 0.0073578
+```
+#### Example input (smtlib, `-a dpll`)
+`(or a1 (and a2 (and a3 (and a4 a5))))`
+#### Example output (smtlib, `-a dpll`)
+```
+SAT a1 a2 a3 a4 a5
+# of decisions: 1, # of propagated vars: 8
+Elapsed time: 0.0062579
+```
+Note that in this case, the solver translates the variable names
+back to their original names and outputs them in lexicographical ordering.
 
 For more details on the possible options please consult the help:
 ```
