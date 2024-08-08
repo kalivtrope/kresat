@@ -83,20 +83,24 @@ p cnf 5 6
 -3 -1 4 0
 3 0
 ```
+
 #### Example output (dimacs, `-a dpll`)
 ```
 SAT -1 2 3 -4 -5
 # of decisions: 2, # of propagated vars: 6
 Elapsed time: 0.0073578
 ```
+
 #### Example input (smtlib, `-a dpll`)
 `(or a1 (and a2 (and a3 (and a4 a5))))`
+
 #### Example output (smtlib, `-a dpll`)
 ```
 SAT a1 a2 a3 a4 a5
 # of decisions: 1, # of propagated vars: 8
 Elapsed time: 0.0062579
 ```
+
 Note that in this case, the solver translates the variable names
 back to their original names and outputs them in lexicographical ordering.
 
@@ -175,6 +179,7 @@ Options:
   -r, --unit-run <unit-run>      Set Luby unit run constant (only used in CDCL) [default: 100]
   -?, -h, --help                 Show help and usage information
 ```
+
 ## Resulting benchmarks
 - [DPLL report](./Report_DPLL.md)
 - [CDCL report](./Report_CDCL.md)
