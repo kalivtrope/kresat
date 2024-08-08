@@ -1,3 +1,5 @@
+using Kresat.Solvers;
+
 namespace Kresat.Representations {  
     enum Valuation {
         FALSIFIED,
@@ -56,7 +58,7 @@ namespace Kresat.Representations {
         }
     }
     interface IPurgeable {
-        void PurgeSelf();
+        public bool IsDeleted {get;set;}
     }
     interface IUnitPropagationDS {
         public bool HasContradiction {get;}
@@ -86,9 +88,11 @@ namespace Kresat.Representations {
                                                         where TLiteral : ILiteral<TLiteral>, ILearning<TClause>, new()
                                                         where TClause : class, IClause<TLiteral>, IPurgeable, ICreateFromLiterals<TClause, TLiteral>
     {
-        protected UnitPropagationDSWithLearning(CommonRepresentation cr) : base(cr){
+        protected UnitPropagationDSWithLearning(CommonRepresentation cr, ResetDeletionConfiguration config) : base(cr){
             used = new bool[cr.LiteralCount+1];
+            cache = new Cache(multiplier: config.Multiplier, initialCacheSize: config.CacheSize);
         }
+        Cache cache;
         bool[] used;
         TClause? conflict;
         List<TLiteral>? clauseToBeLearned;
@@ -105,7 +109,7 @@ namespace Kresat.Representations {
                     learnedClauses.Sort((a,b) => a.LBD.CompareTo(b.LBD));
                     while(learnedClauses.Count * 2 > currMaxSize){
                         TClause clauseToBeRemoved = learnedClauses[^1].Clause;
-                        clauseToBeRemoved.PurgeSelf();
+                        clauseToBeRemoved.IsDeleted = true;
                         learnedClauses.RemoveAt(learnedClauses.Count-1);
                     }
                     currMaxSize = (int)(currMaxSize * multiplier);
@@ -153,7 +157,6 @@ namespace Kresat.Representations {
                 if(!used[Math.Abs(currLit.LitNum)]){
                     continue;
                 }
-                //used[Math.Abs(currLit.LitNum)] = false;
                 if(currLit.DecisionLevel < currDecisionLevel){
                     throw new Exception("shouldn't have gone beyond current decision level");
                 }

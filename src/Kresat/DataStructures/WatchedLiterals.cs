@@ -1,3 +1,5 @@
+using Kresat.Solvers;
+
 namespace Kresat.Representations {
     internal class WatchClause : IClause<WatchLiteral>, IPurgeable,
                                  ICreateFromLiterals<WatchClause, WatchLiteral> {
@@ -5,13 +7,13 @@ namespace Kresat.Representations {
       public static WatchClause Create(List<WatchLiteral> _literals){
         return new WatchClause(_literals);
       }
-      bool isDeleted = false;
+      public bool IsDeleted {get;set;} = false;
       public WatchClause(List<WatchLiteral> _literals){
         this.Literals = _literals;
         ConstructWatches();
       }
       public bool IsSatisfied(){
-        if(isDeleted) return false;
+        if(IsDeleted) return false;
         return (Literals.Count == 1 && Literals[0].Value == Valuation.SATISFIED)
         || (Literals.Count >= 2 && (Literals[0].Value == Valuation.SATISFIED || Literals[1].Value == Valuation.SATISFIED)); 
       }
@@ -53,7 +55,7 @@ namespace Kresat.Representations {
         } while(currPos != startPos);
       }
       public bool IsUnit(){  
-        if(isDeleted) return false;
+        if(IsDeleted) return false;
         //  i) clause is unit if it has size 1 and the only literal is unsatisfied   
         // ii) clause is unit if one of the watches points to a falsified literal
         //     and the other watch points to an unsatisfied literal
@@ -64,7 +66,7 @@ namespace Kresat.Representations {
              ));
       }
       public bool IsFalsified(){
-        if(isDeleted) return false;
+        if(IsDeleted) return false;
         return (Literals.Count == 1 && Literals[0].Value == Valuation.FALSIFIED)
               || (Literals.Count >= 2 && (
                 Literals[0].Value == Valuation.FALSIFIED && Literals[1].Value == Valuation.FALSIFIED
@@ -95,12 +97,6 @@ namespace Kresat.Representations {
           return Literals[1];
         }
       }
-      public void PurgeSelf(){
-        isDeleted = true;
-      }
-      public bool IsDeleted(){
-        return isDeleted;
-      }
     }
 
   internal sealed class WatchLiteral : ILiteral<WatchLiteral>, ILearning<WatchClause> {
@@ -122,7 +118,7 @@ namespace Kresat.Representations {
         for(int i = 0; i < ClausesWithWatch.Count; i++){
           var currClause = ClausesWithWatch[i];
           if(currClause.IsSatisfied()) continue;
-          if(currClause.IsDeleted()){
+          if(currClause.IsDeleted){
             ClausesWithWatch.RemoveInPlace(i);
             i--;
             continue;
