@@ -74,7 +74,6 @@ namespace Kresat.Representations {
             int numLiteralsAtCurrDecisionLevel = 0;
             List<TLiteral> result = new();
             int assertionLevel = 0;
-            //Console.WriteLine($"starting with {used.Contains(true)}");
             for(int j = 0; j < conflict!.Literals!.Count; j++){
                 used[Math.Abs(conflict!.Literals[j].LitNum)] = true;
                 // In a conflict, all of the literals are falsified.
