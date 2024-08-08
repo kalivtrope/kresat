@@ -136,14 +136,14 @@ namespace Kresat {
 
             var cacheSizeOption = new Option<long>(
                 ["-z", "--cache-size"],
-                description: "Set initial cache size\nOnly used in CDCL",
+                description: "Set initial cache size (only used in CDCL)",
                 getDefaultValue: () => 10000
             ){
                 Arity = ArgumentArity.ZeroOrOne
             };
             var multiplierOption = new Option<double>(
                 ["-m", "--multiplier"],
-                description: "Set cache size multiplier\nOnly used in CDCL",
+                description: "Set cache size multiplier (only used in CDCL)",
                 getDefaultValue: () => 1.1  
             ){
                 Arity = ArgumentArity.ZeroOrOne
@@ -151,7 +151,7 @@ namespace Kresat {
 
             var unitRunOption = new Option<int>(
                 ["-r", "--unit-run"],
-                description: "Set Luby unit run constant\nOnly used in CDCL",
+                description: "Set Luby unit run constant (only used in CDCL)",
                 getDefaultValue: () => 100
             ){
                 Arity = ArgumentArity.ZeroOrOne
@@ -218,7 +218,7 @@ namespace Kresat {
                 SolveHandler();
             });
 
-            var datasetLocationArgument = new Argument<string?>(
+            var datasetLocationArgument = new Argument<FileInfo?>(
                 name: "path to datasets",
                 description: "path to dataset folder"
             ){
@@ -226,11 +226,19 @@ namespace Kresat {
             };
             var benchmarkCommand = new Command("benchmark", "Run benchmarks"){
                 datasetLocationArgument,
+                strategyOption,
                 cacheSizeOption,
                 multiplierOption,
                 unitRunOption
             };
-            benchmarkCommand.SetHandler(BenchmarkHandler, datasetLocationArgument);
+            benchmarkCommand.SetHandler( (context) => {
+                Configuration.datasetLocation = context.ParseResult.GetValueForArgument(datasetLocationArgument);
+                Configuration.strategy = context.ParseResult.GetValueForOption(strategyOption);
+                Configuration.cacheSize = context.ParseResult.GetValueForOption(cacheSizeOption);
+                Configuration.multiplier = context.ParseResult.GetValueForOption(multiplierOption);
+                Configuration.unitRun = context.ParseResult.GetValueForOption(unitRunOption);
+                BenchmarkHandler();
+            } );
             rootCommand.AddCommand(tseitinCommand);
             rootCommand.AddCommand(solveCommand);
             rootCommand.AddCommand(benchmarkCommand);
@@ -239,8 +247,8 @@ namespace Kresat {
             return ErrorLogger.HadError ? 1 : 0;
         }
 
-        private static void BenchmarkHandler(string? datasetLocation){
-            UnitPropagationBenchmarks.Run(datasetLocation);
+        private static void BenchmarkHandler(){
+            UnitPropagationBenchmarks.Run();
         }
 
         private static void SolveHandler(){
@@ -304,6 +312,15 @@ namespace Kresat {
             WriteStringToFile(Configuration.outputPath, $"Elapsed time: {stopwatch.Elapsed.TotalSeconds}\n\n");
         }
 
+
+        private static void TseitinHandler(){
+            string? inputData = ReadFile(Configuration.inputPath);
+            if(!ErrorLogger.HadError){
+                SmtLibScanner scanner = new(inputData!);
+                SmtLibParser parser = new(scanner.ScanTokens(), Configuration.useEquivalences);
+                WriteStringToFile(Configuration.outputPath, parser.ToCommonRepresentation().ToString());
+            }
+        }
         private static string? ReadFile(FileInfo? inputPath){
             string? output = null;
             if(inputPath != null){
@@ -327,15 +344,6 @@ namespace Kresat {
             }
             else{
                 Console.Write(data);
-            }
-        }
-
-        private static void TseitinHandler(){
-            string? inputData = ReadFile(Configuration.inputPath);
-            if(!ErrorLogger.HadError){
-                SmtLibScanner scanner = new(inputData!);
-                SmtLibParser parser = new(scanner.ScanTokens(), Configuration.useEquivalences);
-                WriteStringToFile(Configuration.outputPath, parser.ToCommonRepresentation().ToString());
             }
         }
     }

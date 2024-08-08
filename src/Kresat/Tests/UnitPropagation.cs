@@ -17,7 +17,7 @@ namespace Kresat.Benchmarks {
                 }
             }
         }
-        internal static TimeSpan BenchmarkDPLL(string DatasetFile, UnitPropType upt){
+        internal static TimeSpan Benchmark(string DatasetFile, UnitPropType upt){
             var lines = Program.ReadFileContents(DatasetFile);
             IParser parser;
             if(DatasetFile.EndsWith(".cnf")){
@@ -27,31 +27,47 @@ namespace Kresat.Benchmarks {
                 parser = new SmtLibParser(new SmtLibScanner(lines!).ScanTokens(), false);
             }
             CommonRepresentation cr = parser.ToCommonRepresentation();
-            DPLLSolver solver = new DPLLSolver(cr, upt);
+            ISolver solver;
+            if(Configuration.strategy == Strategy.dpll){
+                solver = new DPLLSolver(cr, upt);
+            }
+            else{
+                solver = new CDCLSolver(cr, upt, new ResetDeletionConfiguration{
+                        Multiplier = Configuration.multiplier, UnitRun = Configuration.unitRun, CacheSize = Configuration.cacheSize});
+            }
             Stopwatch stopwatch = new();
             stopwatch.Start();
             Verdict verdict = solver.Solve();
             stopwatch.Stop();
             Program.WriteFileContents("/dev/null", verdict.ToString());
-            //Console.WriteLine($"processed {DatasetFile} {upt} in {stopwatch.Elapsed}");
             return stopwatch.Elapsed;
         }
-        public static TimeSpan BenchmarkAdjacencyListWithDPLL(string DatasetFile){
-            return BenchmarkDPLL(DatasetFile, UnitPropType.adjacency);
+        public static TimeSpan BenchmarkAdjacencyList(string DatasetFile){
+            return Benchmark(DatasetFile, UnitPropType.adjacency);
         }
 
-        public static TimeSpan BenchmarkWatchedLiteralsWithDPLL(string DatasetFile){
-            return BenchmarkDPLL(DatasetFile, UnitPropType.watched);
+        public static TimeSpan BenchmarkWatchedLiterals(string DatasetFile){
+            return Benchmark(DatasetFile, UnitPropType.watched);
         }
-        public static void Run(string? rootFolder){
-            if(rootFolder is null){
+        public static void Run(){
+            string rootFolder;
+            if(Configuration.datasetLocation is null){
                 rootFolder = Path.Combine(Path.GetDirectoryName(WhereAmI()), "../../../datasets");
             }
-            var DatasetFiles = Directory.GetDirectories(rootFolder).SelectMany(GetAllDatasetFiles);
+            else {
+                rootFolder = Configuration.datasetLocation.FullName;
+            }
+            IEnumerable<string>? DatasetFiles;
+            try {    
+                DatasetFiles = Directory.GetDirectories(rootFolder).SelectMany(GetAllDatasetFiles);
+            } catch(Exception ex){
+                ErrorLogger.Report(ex.Message);
+                return;
+            }
 
             var AdjacencyListResults = DatasetFiles
                                         .Select(
-                path => (Path.GetDirectoryName(path), BenchmarkAdjacencyListWithDPLL(path))).
+                path => (Path.GetDirectoryName(path), BenchmarkAdjacencyList(path))).
                 GroupBy(pair => pair.Item1).Select(
                     group => {
                         string datasetName = Path.GetFileName(group.Key);
@@ -62,7 +78,7 @@ namespace Kresat.Benchmarks {
  
             var WatchLiteralsResults = DatasetFiles
             .Select(
-                path => (Path.GetDirectoryName(path), BenchmarkWatchedLiteralsWithDPLL(path)))
+                path => (Path.GetDirectoryName(path), BenchmarkWatchedLiterals(path)))
             .GroupBy(
                 pair => pair.Item1
             ).Select(
@@ -74,8 +90,12 @@ namespace Kresat.Benchmarks {
             );
             var results = AdjacencyListResults.Zip(WatchLiteralsResults);
             Console.WriteLine("Dataset \t Adjacency avg (sec) \t Watched avg (sec)");
-            foreach(var result in results){
-                Console.WriteLine($"{result.First.DatasetName} \t {string.Format("{0:0.####}", result.First.AverageTime/1000)} \t {string.Format("{0:0.####}", result.Second.AverageTime/1000)}");
+            try {    
+                foreach(var result in results){
+                    Console.WriteLine($"{result.First.DatasetName} \t {string.Format("{0:0.####}", result.First.AverageTime/1000)} \t {string.Format("{0:0.####}", result.Second.AverageTime/1000)}");
+                }
+            } catch(Exception ex){
+                ErrorLogger.Report(ex.Message);
             }
         }
     }
