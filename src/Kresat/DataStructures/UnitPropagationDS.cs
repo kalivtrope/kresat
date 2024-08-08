@@ -57,8 +57,9 @@ namespace Kresat.Representations {
             return list[2*(lit - 1) + 1];
         }
     }
-    interface IPurgeable {
-        public bool IsDeleted {get;set;}
+    interface IPurgeable<TLiteral> {
+        bool IsDeleted {get;}
+        IEnumerable<TLiteral> DeleteSelf();
     }
     interface IUnitPropagationDS {
         public bool HasContradiction {get;}
@@ -86,16 +87,17 @@ namespace Kresat.Representations {
     }
     abstract class UnitPropagationDSWithLearning<TLiteral, TClause> : UnitPropagationDS<TLiteral, TClause>, IUnitPropagationDSWithLearning
                                                         where TLiteral : ILiteral<TLiteral>, ILearning<TClause>, new()
-                                                        where TClause : class, IClause<TLiteral>, IPurgeable, ICreateFromLiterals<TClause, TLiteral>
+                                                        where TClause : class, IClause<TLiteral>, IPurgeable<TLiteral>, ICreateFromLiterals<TClause, TLiteral>
     {
         protected UnitPropagationDSWithLearning(CommonRepresentation cr, ResetDeletionConfiguration config) : base(cr){
             used = new bool[cr.LiteralCount+1];
-            cache = new Cache(multiplier: config.Multiplier, initialCacheSize: config.CacheSize);
+            cache = new Cache(multiplier: config.Multiplier, initialCacheSize: config.CacheSize, this);
         }
         Cache cache;
         bool[] used;
         TClause? conflict;
         List<TLiteral>? clauseToBeLearned;
+        public abstract void PurgeDeletedClausesOfLiterals(HashSet<TLiteral> literals);
         class Cache {
             record class TLearnedClause {
                 public TClause Clause {get;init;}
@@ -103,20 +105,25 @@ namespace Kresat.Representations {
             }
             double multiplier;
             long currMaxSize;
-            public Cache(double multiplier, long initialCacheSize){
+            UnitPropagationDSWithLearning<TLiteral, TClause> parent;
+            public Cache(double multiplier, long initialCacheSize, UnitPropagationDSWithLearning<TLiteral, TClause> parent){
                 this.multiplier = multiplier;
                 currMaxSize = initialCacheSize;
+                this.parent = parent;
             }
             List<TLearnedClause> learnedClauses = new();
             public void Add(TClause clause){
                 if(learnedClauses.Count >= currMaxSize){
                     learnedClauses.Sort((a,b) => a.LBD.CompareTo(b.LBD));
+                    HashSet<TLiteral> affectedLiterals = new();
                     while(learnedClauses.Count * 2 > currMaxSize){
                         TClause clauseToBeRemoved = learnedClauses[^1].Clause;
-                        clauseToBeRemoved.IsDeleted = true;
+                        IEnumerable<TLiteral> currAffectedLiterals = clauseToBeRemoved.DeleteSelf();
+                        affectedLiterals.UnionWith(currAffectedLiterals);
                         learnedClauses.RemoveAt(learnedClauses.Count-1);
                     }
                     currMaxSize = (int)(currMaxSize * multiplier);
+                    parent.PurgeDeletedClausesOfLiterals(affectedLiterals);
                 }
                 int LBD = CalculateLBD(clause);
                 learnedClauses.Add(new TLearnedClause{ Clause = clause, LBD = LBD });

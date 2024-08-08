@@ -1,7 +1,7 @@
 using Kresat.Loggers;
 using Kresat.Solvers;
 namespace Kresat.Representations {
-    internal class AdjacencyListClause : IClause<AdjacencyListLiteral>, IPurgeable,
+    internal class AdjacencyListClause : IClause<AdjacencyListLiteral>, IPurgeable<AdjacencyListLiteral>,
                    ICreateFromLiterals<AdjacencyListClause, AdjacencyListLiteral>{
     /*
     We use a counter-based approach to Adjacency lists
@@ -20,7 +20,12 @@ namespace Kresat.Representations {
           ErrorLogger.Report(0, $"{name} became negative which should be impossible");
         }
       }
-      public bool IsDeleted {get; set;} = false;
+      public bool IsDeleted { get; private set; } = false;
+
+      IEnumerable<AdjacencyListLiteral> IPurgeable<AdjacencyListLiteral>.DeleteSelf(){
+        IsDeleted = true;
+        return Literals;
+      }
       int numLiterals;
       int numFalsifiedLiterals;
       int numSatisfiedLiterals;
@@ -53,12 +58,10 @@ namespace Kresat.Representations {
         CheckNonnegative(numSatisfiedLiterals, nameof(numSatisfiedLiterals));
       }
       public bool IsUnit(){
-        if(IsDeleted) return false;
         return numSatisfiedLiterals == 0
         && numFalsifiedLiterals + 1 == numLiterals;
       }
       public bool IsSatisfied(){
-        if(IsDeleted) return false;
         return numSatisfiedLiterals >= 1;
       }
       public AdjacencyListLiteral GetUnitLiteral(){
@@ -70,7 +73,6 @@ namespace Kresat.Representations {
         throw new ArgumentException();
       }
       public bool IsFalsified(){
-        if(IsDeleted) return false;
         return numFalsifiedLiterals == numLiterals;
       }
         public static AdjacencyListClause Create(List<AdjacencyListLiteral> _literals)
@@ -89,13 +91,8 @@ namespace Kresat.Representations {
 
         public void Falsify(){
           Value = Valuation.FALSIFIED;
-          for(int i = 0; i < Clauses.Count; i++){
-            if(Clauses[i].IsDeleted){
-              Clauses.RemoveInPlace(i);
-              i--;
-              continue;
-            }
-            Clauses[i].FalsifyLiteral();
+          foreach(var clause in Clauses){
+            clause.FalsifyLiteral();
           }
         }
         public IReadOnlyList<IClause<AdjacencyListLiteral>> GetClauses(){
@@ -103,25 +100,20 @@ namespace Kresat.Representations {
         }
         public void Satisfy(){
           Value = Valuation.SATISFIED;
-            for(int i = 0; i < Clauses.Count; i++){
-              Clauses[i].SatisfyLiteral();
+            foreach(var clause in Clauses){
+              clause.SatisfyLiteral();
             }
         }
         public void Unsatisfy(){
           if(Value == Valuation.UNSATISFIED){
             return;
           }
-          for(int i = 0; i < Clauses.Count; i++){
-            if(Clauses[i].IsDeleted){
-              Clauses.RemoveInPlace(i);
-              i--;
-              continue;
-            }
+          foreach(var clause in Clauses){
             if(Value == Valuation.FALSIFIED){
-              Clauses[i].UnfalsifyLiteral();
+              clause.UnfalsifyLiteral();
             }
             else{
-              Clauses[i].UnsatisfyLiteral();
+              clause.UnsatisfyLiteral();
             }
           }
           Value = Valuation.UNSATISFIED;
@@ -135,5 +127,17 @@ namespace Kresat.Representations {
     }
     internal class AdjacencyListsWithLearning : UnitPropagationDSWithLearning<AdjacencyListLiteral, AdjacencyListClause> {
       public AdjacencyListsWithLearning(CommonRepresentation cr, ResetDeletionConfiguration config) : base(cr, config){}
+
+        public sealed override void PurgeDeletedClausesOfLiterals(HashSet<AdjacencyListLiteral> literals)
+        {
+          foreach(var lit in literals){
+            for(int i = 0; i < lit.Clauses.Count; i++){
+              if(lit.Clauses[i].IsDeleted){
+                lit.Clauses.RemoveInPlace(i);
+                i--;
+              }
+            }
+          }
+        }
     }
 }
