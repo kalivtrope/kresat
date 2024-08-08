@@ -6,6 +6,10 @@ namespace Kresat.Loggers {
             HadError = true;
             Console.Error.WriteLine($"[line {line}] Error: {message}");
         }
+        public static void Report(string message){
+            HadError = true;
+            Console.Error.WriteLine($"Error: {message}");
+        }
         public static void ReportWarning(string message){
             HadWarning = true;
             Console.Error.WriteLine($"Warning: {message}");

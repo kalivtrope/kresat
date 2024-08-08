@@ -59,7 +59,7 @@ namespace Kresat.Representations {
             for(int litIdx = 0; litIdx < clause.Count; litIdx++){
                 int litNum = clause[litIdx];
                 if(litNum == 0){
-                    ErrorLogger.Report(0, "Cannot have a 0 literal in clause");
+                    ErrorLogger.Report("Cannot have a 0 literal in clause");
                 }
                 if(literals.Contains(-litNum)){
                     ErrorLogger.ReportWarning($"Cannot have both {litNum} and {-litNum} in the same clause");

@@ -17,7 +17,7 @@ namespace Kresat.Representations {
       public List<AdjacencyListLiteral> Literals { get; set; }
         void CheckNonnegative(int val, string name){
         if (val < 0){
-          ErrorLogger.Report(0, $"{name} became negative which should be impossible");
+          ErrorLogger.Report($"{name} became negative which should be impossible");
         }
       }
       public bool IsDeleted { get; private set; } = false;

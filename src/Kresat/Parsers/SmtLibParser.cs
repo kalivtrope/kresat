@@ -97,7 +97,7 @@ namespace Kresat.Parsers {
                     Debug(levelOfIndent, curr);
                     return idMap[curr.Payload!];
                 default:
-                    ErrorLogger.Report(0, $"Unexpected token: {curr} at idx {currIdx} (expected either IDENTIFIER or LEFT_PAREN)");
+                    ErrorLogger.Report($"Unexpected token: {curr} at idx {currIdx} (expected either IDENTIFIER or LEFT_PAREN)");
                     break;
             }
             return 0;

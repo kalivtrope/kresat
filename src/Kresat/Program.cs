@@ -5,7 +5,7 @@ using Kresat.Solvers;
 using Kresat.Representations;
 using System.CommandLine;
 using System.Diagnostics;
-using Kresat.Tests;
+using Kresat.Benchmarks;
 using Kresat.Verifiers;
 
 namespace Kresat {
@@ -21,29 +21,28 @@ namespace Kresat {
         cdcl,
         dpll
     }
-
+    static class Configuration {
+        public static FileInfo? inputPath;
+        public static FileInfo? outputPath;
+        public static bool useEquivalences;
+        public static Format? format;
+        public static UnitPropType unitPropType;
+        public static Strategy strategy;
+        public static long cacheSize;
+        public static double multiplier;
+        public static int unitRun;
+        public static bool? useDimacs;
+        public static bool? useSmtlib;
+        public static FileInfo? datasetLocation;
+    }
     public class Program {
-        static class Configuration {
-            public static FileInfo? inputPath;
-            public static FileInfo? outputPath;
-            public static bool useEquivalences;
-            public static Format? format;
-            public static UnitPropType unitPropType;
-            public static Strategy strategy;
-            public static long cacheSize;
-            public static double multiplier;
-            public static int unitRun;
-            internal static bool? useDimacs;
-            internal static bool? useSmtlib;
-        }
-
         public static string? ReadFileContents(string path){
             try {
                 StreamReader sr = new StreamReader(path);
                 return sr.ReadToEnd();
             }
             catch (Exception ex){
-                ErrorLogger.Report(0, $"{ex.Message}");
+                ErrorLogger.Report($"{ex.Message}");
             }
             return null;
         }
@@ -53,7 +52,7 @@ namespace Kresat {
                 sw.Write(contents);
             }
             catch (Exception ex){
-                ErrorLogger.Report(0, $"{ex.Message}");
+                ErrorLogger.Report($"{ex.Message}");
             }
         }
         public static int Main(string[] args){
@@ -316,7 +315,7 @@ namespace Kresat {
                     output = sr.ReadToEnd();
                 }
                 catch (Exception ex){
-                    ErrorLogger.Report(0, $"{ex.Message}");
+                    ErrorLogger.Report($"{ex.Message}");
                 }
             }
             return output;

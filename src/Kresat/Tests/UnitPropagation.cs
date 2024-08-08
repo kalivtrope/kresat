@@ -1,11 +1,12 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Kresat.Loggers;
 using Kresat.Parsers;
 using Kresat.Representations;
 using Kresat.Scanners;
 using Kresat.Solvers;
 
-namespace Kresat.Tests {
+namespace Kresat.Benchmarks {
     public class UnitPropagationBenchmarks {
         static string WhereAmI([CallerFilePath] string callerFilePath = "") => callerFilePath;
 
