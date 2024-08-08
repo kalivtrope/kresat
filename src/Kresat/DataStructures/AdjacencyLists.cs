@@ -134,6 +134,6 @@ namespace Kresat.Representations {
       public AdjacencyLists(CommonRepresentation cr) : base(cr){}
     }
     internal class AdjacencyListsWithLearning : UnitPropagationDSWithLearning<AdjacencyListLiteral, AdjacencyListClause> {
-      public AdjacencyListsWithLearning(CommonRepresentation cr) : base(cr){}
+      public AdjacencyListsWithLearning(CommonRepresentation cr, ResetDeletionConfiguration config) : base(cr, config){}
     }
 }

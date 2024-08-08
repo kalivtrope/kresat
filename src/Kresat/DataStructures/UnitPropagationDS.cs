@@ -101,8 +101,12 @@ namespace Kresat.Representations {
                 public TClause Clause {get;init;}
                 public int LBD {get;init;}
             }
-            double multiplier = 1.5;
-            long currMaxSize = 10000;
+            double multiplier;
+            long currMaxSize;
+            public Cache(double multiplier, long initialCacheSize){
+                this.multiplier = multiplier;
+                currMaxSize = initialCacheSize;
+            }
             List<TLearnedClause> learnedClauses = new();
             public void Add(TClause clause){
                 if(learnedClauses.Count >= currMaxSize){
@@ -125,7 +129,6 @@ namespace Kresat.Representations {
                 return levels.Count;
             }
         }
-        Cache cache = new();
         public void Restart(){
             Backtrack(0);
         }

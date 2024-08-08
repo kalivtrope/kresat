@@ -142,6 +142,6 @@ namespace Kresat.Representations {
 
     internal class WatchedLiteralsWithLearning : UnitPropagationDSWithLearning<WatchLiteral, WatchClause>
     {
-        public WatchedLiteralsWithLearning(CommonRepresentation cr) : base(cr){}
+        public WatchedLiteralsWithLearning(CommonRepresentation cr, ResetDeletionConfiguration config) : base(cr, config){}
     }
 }

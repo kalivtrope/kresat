@@ -1,13 +1,11 @@
 using Kresat.Representations;
 
 namespace Kresat.Solvers {
-    class DPLLSolver {
+    class DPLLSolver : ISolver {
         public int numDecisions {get;private set;} = 0;
         public int unitPropSteps {get => upds.unitPropSteps;}
         IUnitPropagationDS upds;
-        CommonRepresentation cr;
         public DPLLSolver(CommonRepresentation cr, UnitPropType unitProp){
-            this.cr = cr;
             if(unitProp == UnitPropType.adjacency){
                 upds = new AdjacencyLists(cr);
             }

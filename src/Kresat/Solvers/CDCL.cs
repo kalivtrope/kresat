@@ -1,23 +1,28 @@
 using Kresat.Representations;
-using Kresat;
 
 namespace Kresat.Solvers {
-    class CDCLSolver {
+
+    internal class ResetDeletionConfiguration
+    {
+        public double Multiplier { get; set; }
+        public int UnitRun { get; set; }
+        public long CacheSize { get; set; }
+    }
+    class CDCLSolver : ISolver {
         public int numDecisions {get;private set;} = 0;
         public int unitPropSteps {get => upds.unitPropSteps;}
         public int numRestarts {get; private set;} = 0;
         public int totalNumConflicts {get; private set;} = 0;
         int numConflicts = 0;
         IUnitPropagationDSWithLearning upds;
-        CommonRepresentation cr;
-        LubyGenerator lubyGenerator = new();
-        public CDCLSolver(CommonRepresentation cr, UnitPropType unitProp){
-            this.cr = cr;
+        LubyGenerator lubyGenerator;
+        public CDCLSolver(CommonRepresentation cr, UnitPropType unitProp, ResetDeletionConfiguration config){
+            lubyGenerator = new LubyGenerator(unitRun: config.UnitRun);
             if(unitProp == UnitPropType.adjacency){
-                upds = new AdjacencyListsWithLearning(cr);
+                upds = new AdjacencyListsWithLearning(cr, config);
             }
             else{
-                upds = new WatchedLiteralsWithLearning(cr);
+                upds = new WatchedLiteralsWithLearning(cr, config);
             }
         }
         public Verdict Solve(){
@@ -51,9 +56,12 @@ namespace Kresat.Solvers {
         class LubyGenerator {
             // see https://oeis.org/A182105 on details about why this works
             long u = 1, v = 1;
-            long unit_run = 100;
+            long unitRun;
+            public LubyGenerator(long unitRun){
+                this.unitRun = unitRun;
+            }
             public bool TimeToRestart(int numConflicts){
-                if(numConflicts >= unit_run * v){
+                if(numConflicts >= unitRun * v){
                     Advance();
                     return true;
                 }
