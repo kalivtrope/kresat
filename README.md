@@ -10,6 +10,8 @@ It has the following features:
 
 For further notes on implementation see the [implementation README](./README_impl.md).
 
+For developer notes (such as project hierarchy) see the [developer README](./README_dev.md).
+
 ## Dependencies
 - [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - [System.Commandline](https://www.nuget.org/packages/System.CommandLine) library (installed automatically while building the project)
@@ -103,7 +105,7 @@ SAT a1 a2 a3 a4 a5
 Elapsed time: 0.0062579
 ```
 
-Note that in this case, the solver translates the variable names
+Note that in this case the solver translates the variable names
 back to their original names and outputs them in lexicographical ordering.
 
 For more details on the possible options please consult the help:
