@@ -4,9 +4,9 @@ KreSAT is a simple CDCL Solver written in C#.
 It has the following features:
 
 - watched literals
-- clause learning via 1-UIP
-- clause deletion via LBD
-- restarts based on the Luby sequence
+- clause learning with stopping at 1-UIP
+- clause deletion based on LBD
+- restarts based on Luby sequences
 
 For further notes on implementation see the [implementation README](./README_impl.md).
 
