@@ -8,6 +8,8 @@ It has the following features:
 - clause deletion via LBD
 - restarts based on the Luby sequence
 
+For further notes on implementation see the [implementation README](./README_impl.md).
+
 ## Dependencies
 - [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - [System.Commandline](https://www.nuget.org/packages/System.CommandLine) library (installed automatically while building the project)
